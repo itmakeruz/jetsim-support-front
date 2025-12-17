@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate, Outlet } from "react-router-dom";
+import { Outlet } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import Loader from "@/components/loader/Loader";
 
@@ -10,7 +10,7 @@ export default function ProtectedRoute() {
   const { token, logout, getProfile } = useAuthStore();
 
   const [isLoading, setIsLoading] = useState(true);
-  const [isAuthorized, setIsAuthorized] = useState(false);
+  // const [setIsAuthorized] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -18,13 +18,13 @@ export default function ProtectedRoute() {
         if (!token) throw new Error("Token yo'q");
         const res = await getProfile();
         if (res.success) {
-          setIsAuthorized(true);
+          // setIsAuthorized(true);
         } else {
           console.log(res.message);
         }
       } catch (err) {
         logout();
-        setIsAuthorized(false);
+        // setIsAuthorized(false);
       } finally {
         setIsLoading(false);
       }

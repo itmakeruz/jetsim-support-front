@@ -32,7 +32,7 @@ interface AuthStore {
 }
 
 // --- Store ---
-export const useAuthStore = create<AuthStore>((set, get) => ({
+export const useAuthStore = create<AuthStore>((set) => ({
   token: localStorage.getItem("e_token") || null,
   user: null,
   isLoading: false,

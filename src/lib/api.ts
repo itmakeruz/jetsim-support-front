@@ -1,5 +1,4 @@
 import axios from "@/lib/axios";
-import { DeliveryStatus } from "@/types/orders";
 import { size } from "@/constants/paginationStuffs";
 import type { TransferType } from "@/types/transfers";
 
@@ -9,32 +8,6 @@ export const authAPI = {
     axios.post("/auth/login", data),
   logout: () => axios.post("/logout"),
   getProfile: () => axios.get("/users/profile"),
-};
-
-// New Orders API for logistics back-end
-export const ordersAPI = {
-  getOrders: ({
-    deliveryStatus,
-    page = 1,
-  }: {
-    deliveryStatus?: DeliveryStatus | string;
-    page?: number;
-    search?: string;
-  }) => {
-    const params: Record<string, any> = {
-      limit: size,
-    };
-
-    if (deliveryStatus) {
-      params.deliveryStatus = deliveryStatus;
-    }
-    if (page > 1) {
-      params.page = page;
-    }
-
-    return axios.get("/orders", { params });
-  },
-  getOrder: (id: string) => axios.get(`/orders/${id}`),
 };
 
 // Transport Categories API
