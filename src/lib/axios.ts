@@ -1,8 +1,7 @@
 import axios from "axios";
 import { LANG_KEY, TOKEN_KEY } from "@/constants/staticDatas";
-export const API_VERSION = "";
 const instance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL + API_VERSION, // .env dan oladi
+  baseURL: import.meta.env.VITE_API_BASE_URL, // .env dan oladi
 });
 
 instance.interceptors.request.use((config) => {
