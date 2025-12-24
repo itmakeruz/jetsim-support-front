@@ -42,7 +42,7 @@ const MaskedPhoneInput: React.FC<MaskedPhoneInputProps> = ({
         required={required}
         onChange={onChange}
         className={`border w-full outline-none px-4 py-3 border-[rgb(116,120,141,0.35)] rounded text-sm 
-          ${className} ${disabled ? "!border-transparent" : ""}
+          ${className} ${disabled ? "border-transparent!" : ""}
           `}
       />
     </div>

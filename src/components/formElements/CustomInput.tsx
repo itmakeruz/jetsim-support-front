@@ -55,7 +55,7 @@ export default function CustomInput({
       >
         {textarea && (
           <textarea
-            className={`w-full text-main-black bg-transparent placeholder-main-grey !outline-none min-h-28 ${textareaClassname}`}
+            className={`w-full text-main-black bg-transparent placeholder-main-grey outline-none! min-h-28 ${textareaClassname}`}
             placeholder={placeholder}
             required={required}
             value={value}
