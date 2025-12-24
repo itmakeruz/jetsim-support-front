@@ -1,52 +1,51 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { users } from "@/data";
 import { SearchIcon } from "lucide-react";
 import { useState } from "react";
 import ChatUser from "./ChatUser";
-import type { User } from "@/types/users";
+import type { Ticket } from "@/types/chat";
 
 interface ChatTabsProps {
-  onUserSelect?: (user: User) => void;
+  onUserSelect?: (user: Ticket) => void;
   selectedUserId?: number | null;
+  tickets: Ticket[];
 }
 
 interface TabConfig {
   value: string;
   label: string;
-  filterFn: (users: User[]) => User[];
 }
 
 const tabConfigs: TabConfig[] = [
   {
     value: "all",
     label: "Все",
-    filterFn: (chats) => chats,
   },
   {
     value: "new",
     label: "Новые",
-    filterFn: (chats) => chats.filter((chat) => chat.type === "new"),
   },
   {
     value: "my-chats",
     label: "Мои чаты",
-    filterFn: (chats) => chats.filter((chat) => chat.type === "assigned"),
   },
   {
     value: "closed",
     label: "Закрытые",
-    filterFn: (chats) => chats.filter((chat) => chat.type === "closed"),
   },
 ];
 
-export function ChatTabs({ onUserSelect, selectedUserId }: ChatTabsProps) {
+export function ChatTabs({
+  onUserSelect,
+  selectedUserId,
+  tickets,
+}: ChatTabsProps) {
   const [activeTab, setActiveTab] = useState("all");
 
-  const renderUser = (user: User) => (
+  const renderUser = (ticket: Ticket) => (
     <ChatUser
-      key={user.id}
-      user={user}
-      isActive={selectedUserId === user.id}
+      key={ticket.id}
+      ticket={ticket}
+      isActive={selectedUserId === ticket.id}
       onSelect={onUserSelect}
     />
   );
@@ -54,11 +53,6 @@ export function ChatTabs({ onUserSelect, selectedUserId }: ChatTabsProps) {
   const getIndicatorPosition = () => {
     const activeIndex = tabConfigs.findIndex((tab) => tab.value === activeTab);
     return activeIndex >= 0 ? activeIndex * 100 : 0;
-  };
-
-  const filteredUsers = (tabValue: string) => {
-    const tabConfig = tabConfigs.find((tab) => tab.value === tabValue);
-    return tabConfig ? tabConfig.filterFn(users) : [];
   };
 
   return (
@@ -71,7 +65,7 @@ export function ChatTabs({ onUserSelect, selectedUserId }: ChatTabsProps) {
         {tabConfigs.map((tab) => (
           <TabsTrigger
             key={tab.value}
-            className={`bg-transparent! shadow-none! font-semibold ${
+            className={`bg-transparent! shadow-none! text-[12px] xl:text-[14px] font-semibold ${
               activeTab === tab.value ? "" : "text-main-color"
             }`}
             value={tab.value}
@@ -106,7 +100,7 @@ export function ChatTabs({ onUserSelect, selectedUserId }: ChatTabsProps) {
           className="h-full overflow-hidden"
         >
           <div className="custom-scrollbar overflow-y-auto h-full">
-            {filteredUsers(tab.value).map((user: User) => renderUser(user))}
+            {tickets.map((user: Ticket) => renderUser(user))}
           </div>
         </TabsContent>
       ))}

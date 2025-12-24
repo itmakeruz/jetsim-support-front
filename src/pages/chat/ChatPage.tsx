@@ -1,37 +1,85 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useRef, useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useSearchParams } from "react-router-dom";
 import { ChatTabs } from "./components/ChatTabs";
 import ChatHeader from "./components/ChatHeader";
 import ChatMessages from "./components/ChatMessages";
 import ChatComposer from "./components/ChatComposer";
-import { conversationByUser, baseConversation } from "./data/conversations";
-import type { Message } from "@/types/chat";
-import type { User } from "@/types/users";
-import { users } from "@/data";
 import { chatAPI } from "@/lib/api";
+import Loader from "@/components/loader/Loader";
+import {
+  exitChat,
+  setNotificationCallback,
+  removeNotificationCallback,
+} from "@/lib/socket";
+import type { Ticket } from "@/types/chat";
 
 function ChatPage() {
-  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const userIdFromUrl = searchParams.get("userId");
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(
+    userIdFromUrl ? Number(userIdFromUrl) : null
+  );
+  const [updatedTickets, setUpdatedTickets] = useState<Ticket[]>([]);
+  const isUpdatingFromUser = useRef(false);
 
-  const { data: ticketsResponse } = useQuery({
+  const { data: ticketsResponse, isLoading: isLoadingTickets } = useQuery({
     queryKey: ["tickets"],
     queryFn: () => chatAPI.getTickets(),
   });
-  console.log(ticketsResponse);
+  const { data: singleTicketResponse, isLoading: isLoadingSingleTicket } =
+    useQuery({
+      queryKey: ["singleTicket", selectedUserId],
+      queryFn: () => chatAPI.getSingleTicket(selectedUserId),
+      enabled: !!selectedUserId,
+    });
 
-  const selectedUser = useMemo(
-    () => users.find((user) => user.id === selectedUserId) ?? null,
-    [selectedUserId]
-  );
+  // Update URL when selectedUserId changes (from user action)
+  useEffect(() => {
+    if (isUpdatingFromUser.current) {
+      if (selectedUserId !== null) {
+        const currentUrlUserId = searchParams.get("userId");
+        if (currentUrlUserId !== selectedUserId.toString()) {
+          setSearchParams(
+            { userId: selectedUserId.toString() },
+            { replace: true }
+          );
+        }
+      } else {
+        const currentUrlUserId = searchParams.get("userId");
+        if (currentUrlUserId !== null) {
+          setSearchParams({}, { replace: true });
+        }
+      }
+      isUpdatingFromUser.current = false;
+    }
+  }, [selectedUserId, searchParams, setSearchParams]);
 
-  const conversation = useMemo<Message[]>(() => {
-    if (!selectedUserId) return [];
-    return conversationByUser[selectedUserId] ?? baseConversation;
-  }, [selectedUserId]);
+  // Sync with URL changes (e.g., browser back/forward, direct link)
+  useEffect(() => {
+    const urlUserId = searchParams.get("userId");
+    if (urlUserId) {
+      const userId = Number(urlUserId);
+      if (!isNaN(userId) && userId !== selectedUserId) {
+        // Exit previous chat if switching to a new one
+        if (selectedUserId !== null) {
+          exitChat(selectedUserId);
+        }
+        isUpdatingFromUser.current = false;
+        setSelectedUserId(userId);
+      }
+    } else if (selectedUserId !== null && !isUpdatingFromUser.current) {
+      // Exit chat when deselecting
+      exitChat(selectedUserId);
+      setSelectedUserId(null);
+    }
+  }, [searchParams, selectedUserId]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape" && selectedUserId !== null) {
+        exitChat(selectedUserId);
+        isUpdatingFromUser.current = true;
         setSelectedUserId(null);
       }
     };
@@ -42,19 +90,105 @@ function ChatPage() {
     };
   }, [selectedUserId]);
 
+  // Exit chat when component unmounts
+  useEffect(() => {
+    return () => {
+      if (selectedUserId !== null) {
+        exitChat(selectedUserId);
+      }
+    };
+  }, [selectedUserId]);
+
+  // Handle socket notifications - update chat list
+  useEffect(() => {
+    const handleNotification = (newTicket: Ticket) => {
+      setUpdatedTickets((prevTickets) => {
+        const existingIndex = prevTickets.findIndex(
+          (t) => t.user_id === newTicket.user_id
+        );
+        console.log(existingIndex);
+
+        if (existingIndex >= 0) {
+          // Update existing ticket (merge push count and last message)
+          const updated = [...prevTickets];
+          updated[existingIndex] = {
+            ...updated[existingIndex],
+            last_message: newTicket.last_message,
+            push: newTicket.push,
+            formatted_date: newTicket.formatted_date,
+            is_online: newTicket.is_online,
+          };
+          return updated;
+        } else {
+          // Add new ticket to the beginning of the list
+          return [newTicket, ...prevTickets];
+        }
+      });
+    };
+
+    // Set the notification callback
+    setNotificationCallback(handleNotification);
+
+    // Cleanup on unmount
+    return () => {
+      removeNotificationCallback();
+    };
+  }, []);
+
+  // Merge API tickets with updated tickets from socket
+  const tickets = useMemo(() => {
+    const apiTickets = ticketsResponse?.tickets || [];
+
+    if (updatedTickets.length === 0) {
+      return apiTickets;
+    }
+
+    // Create a map of updated tickets by user_id
+    const updatedMap = new Map(
+      updatedTickets.map((ticket) => [ticket.id, ticket])
+    );
+
+    // Merge: use updated ticket if exists, otherwise use API ticket
+    const mergedTickets = apiTickets.map((apiTicket) => {
+      const updatedTicket = updatedMap.get(apiTicket.user_id);
+      if (updatedTicket) {
+        // Remove from map so we know it's been merged
+        updatedMap.delete(apiTicket.user_id);
+        return updatedTicket;
+      }
+      return apiTicket;
+    });
+
+    // Add any new tickets that weren't in the API response
+    const newTickets = Array.from(updatedMap.values());
+    return [...newTickets, ...mergedTickets];
+  }, [ticketsResponse?.tickets, updatedTickets]);
+
+  if (isLoadingTickets) {
+    return <Loader isFullScreen={true} />;
+  }
+  console.log(tickets);
+
   return (
     <div className="h-full overflow-hidden bg-white">
-      <div className="grid 2xl:grid-cols-[450px_1fr] grid-cols-[350px_1fr] h-full">
+      <div className="grid 2xl:grid-cols-[420px_1fr] xl:grid-cols-[380px_1fr] lg:grid-cols-[350px_1fr] h-full">
         <ChatTabs
-          onUserSelect={(user: User) => setSelectedUserId(user.id)}
+          tickets={tickets!}
+          onUserSelect={(user: Ticket) => {
+            isUpdatingFromUser.current = true;
+            setSelectedUserId(user.id);
+          }}
           selectedUserId={selectedUserId}
         />
 
         <div className="flex flex-col overflow-hidden h-full bg-[#F5F7FB] bg-image-chat">
-          {selectedUser ? (
+          {singleTicketResponse && !isLoadingSingleTicket ? (
             <>
-              <ChatHeader user={selectedUser} />
-              <ChatMessages user={selectedUser} messages={conversation} />
+              <ChatHeader ticket={singleTicketResponse.ticket} />
+              <ChatMessages
+                user={singleTicketResponse.ticket}
+                messages={singleTicketResponse.messages ?? []}
+              />
               <ChatComposer />
             </>
           ) : (

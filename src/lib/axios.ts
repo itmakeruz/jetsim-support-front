@@ -1,5 +1,5 @@
 import axios from "axios";
-import { TOKEN_KEY } from "@/constants/staticDatas";
+import { LANG_KEY, TOKEN_KEY } from "@/constants/staticDatas";
 export const API_VERSION = "";
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL + API_VERSION, // .env dan oladi
@@ -11,7 +11,7 @@ instance.interceptors.request.use((config) => {
     config.headers.Authorization = `Bearer ${token}`;
   }
 
-  const lang = localStorage.getItem("e_langauge");
+  const lang = localStorage.getItem(LANG_KEY) || "ru";
   if (lang) {
     config.headers["Accept-Language"] = lang;
   }
@@ -19,6 +19,7 @@ instance.interceptors.request.use((config) => {
   // Set Content-Type to application/json only if not FormData
   if (!(config.data instanceof FormData)) {
     config.headers["Content-Type"] = "application/json";
+    config.headers["Accept-Language"] = lang;
   }
 
   return config;

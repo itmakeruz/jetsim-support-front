@@ -1,10 +1,8 @@
-import type { Message } from "@/types/chat";
-import type { User } from "@/types/users";
-import { Download } from "lucide-react";
+import type { Message, Ticket } from "@/types/chat";
 import { useEffect, useRef } from "react";
 
 interface ChatMessagesProps {
-  user: User;
+  user: Ticket;
   messages: Message[];
 }
 
@@ -36,8 +34,10 @@ const groupMessages = (messages: Message[]): GroupedMessages[] => {
   const groups: Record<string, Message[]> = {};
 
   messages.forEach((message) => {
-    if (!groups[message.date]) groups[message.date] = [];
-    groups[message.date].push(message);
+    // Extract date part (YYYY-MM-DD) from ISO date string
+    const dateKey = message.date.split("T")[0];
+    if (!groups[dateKey]) groups[dateKey] = [];
+    groups[dateKey].push(message);
   });
 
   return Object.entries(groups)
@@ -71,7 +71,7 @@ function ChatMessages({ user, messages }: ChatMessagesProps) {
           </div>
 
           {group.items.map((message) => {
-            const isMe = message.sender === "me";
+            const isMe = message.is_answer !== 0;
 
             return (
               <div
@@ -81,12 +81,8 @@ function ChatMessages({ user, messages }: ChatMessagesProps) {
                 }`}
               >
                 {!isMe && (
-                  <div className="w-8 h-8 rounded-full overflow-hidden bg-gray-200 shrink-0">
-                    <img
-                      src={user.avatar || ""}
-                      alt={user.name}
-                      className="w-full h-full object-cover"
-                    />
+                  <div className="w-9 h-9 shrink-0 text-base font-bold rounded-full bg-main-color text-white overflow-hidden flex items-center justify-center">
+                    {user.user_name.charAt(0)}
                   </div>
                 )}
 
@@ -96,17 +92,17 @@ function ChatMessages({ user, messages }: ChatMessagesProps) {
                   }`}
                 >
                   <div
-                    className={`relative text-[14px] px-4 py-3 flex flex-col gap-2 leading-[1.4]
+                    className={`relative min-w-[200px] text-[14px] px-4 py-3 flex flex-col gap-2 leading-[1.4]
                     ${
                       isMe
                         ? "bg-[#f5f7fb] rounded-[4px_4px_0px_4px] text-gray-900 chat-bubble-me"
                         : "bg-main-color rounded-[4px_4px_4px_0] text-white chat-bubble-other"
                     }`}
                   >
-                    {message.text}
+                    {message.message.content}
 
                     {/* Attachments */}
-                    {message.attachments && (
+                    {/* {message.attachments && (
                       <div className="flex gap-2 flex-wrap">
                         {message.attachments.map((url) => {
                           const fileName = url.split("/").pop();
@@ -135,10 +131,10 @@ function ChatMessages({ user, messages }: ChatMessagesProps) {
                           );
                         })}
                       </div>
-                    )}
+                    )} */}
 
                     <span className="text-[12px] text-gray-500 self-end">
-                      {message.time}
+                      {message.formatted_time}
                     </span>
                   </div>
                 </div>

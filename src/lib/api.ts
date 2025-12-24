@@ -1,6 +1,6 @@
 import axios from "@/lib/axios";
 import type { LoginResponse } from "@/types/auth";
-import type { TicketsResponse } from "@/types/chat";
+import type { TicketsResponse, SingleTicketResponse } from "@/types/chat";
 import type { GetProfileResponse } from "@/types/profile";
 
 // Auth API - Exact match from api-data.json
@@ -24,6 +24,13 @@ export const chatAPI = {
 
     return axios
       .get<TicketsResponse>("/chat/operator/user/tickets", { params })
+      .then((res) => res.data);
+  },
+  getSingleTicket: (
+    ticketId?: number | null
+  ): Promise<SingleTicketResponse> => {
+    return axios
+      .get<SingleTicketResponse>(`/chat/operator/ticket/${ticketId}/chats`)
       .then((res) => res.data);
   },
 };
