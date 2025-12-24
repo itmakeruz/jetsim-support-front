@@ -73,7 +73,7 @@ export default function Login() {
         <UniversalBtn
           type="submit"
           disabled={loading}
-          className="w-full py-2 px-4 disabled:cursor-not-allowed bg-main-color rounded justify-center hover:!bg-main-color/90 disabled:!bg-main-color/50"
+          className="w-full py-2 px-4 disabled:cursor-not-allowed bg-main-color rounded justify-center hover:bg-main-color/90! disabled:bg-main-color/50!"
         >
           {loading ? <Loader2 className="animate-spin w-4 h-4" /> : "Войти"}
         </UniversalBtn>
