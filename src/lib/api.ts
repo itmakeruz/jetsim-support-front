@@ -1,87 +1,29 @@
 import axios from "@/lib/axios";
-import { size } from "@/constants/paginationStuffs";
-import type { TransferType } from "@/types/transfers";
+import type { LoginResponse } from "@/types/auth";
+import type { TicketsResponse } from "@/types/chat";
+import type { GetProfileResponse } from "@/types/profile";
 
 // Auth API - Exact match from api-data.json
 export const authAPI = {
-  login: (data: { username: string; password: string }) =>
-    axios.post("/auth/login", data),
+  login: (data: { login: string; password: string }): Promise<LoginResponse> =>
+    axios.post<LoginResponse>("/chat/auth/login", data).then((res) => res.data),
   logout: () => axios.post("/logout"),
-  getProfile: () => axios.get("/users/profile"),
+  getProfile: (): Promise<GetProfileResponse> =>
+    axios.get<GetProfileResponse>("/chat/auth/me").then((res) => res.data),
 };
 
-// Transport Categories API
-export const transportCategoriesAPI = {
-  getTransportCategories: ({ page = 1 }: { page?: number }) => {
-    const params: Record<string, any> = {
-      limit: size,
-    };
+export const chatAPI = {
+  getTickets: (size?: number, page?: number): Promise<TicketsResponse> => {
+    const params: {
+      size?: number;
+      page?: number;
+    } = {};
 
-    if (page > 1) {
-      params.page = page;
-    }
+    params.size = size;
+    params.page = page;
 
-    return axios.get("/transport-types/admin", { params });
+    return axios
+      .get<TicketsResponse>("/chat/operator/user/tickets", { params })
+      .then((res) => res.data);
   },
-  getTransportCategory: (id: string | number) =>
-    axios.get(`/transport-types/${id}`),
-  createTransportCategory: (data: TransferType | null) =>
-    axios.post("/transport-types", data),
-  updateTransportCategory: (id: string | number, data: TransferType | null) =>
-    axios.patch(`/transport-types/${id}`, data),
-  deleteTransportCategory: (id: string | number) =>
-    axios.delete(`/transport-types/${id}`),
-};
-
-// Order Types (Cargo Types) API
-export const orderTypesAPI = {
-  getOrderTypes: ({ page = 1 }: { page?: number }) => {
-    const params: Record<string, any> = {
-      limit: size,
-    };
-
-    if (page > 1) {
-      params.page = page;
-    }
-
-    return axios.get("/order-types/admin", { params });
-  },
-  getOrderType: (id: string | number) => axios.get(`/order-types/${id}`),
-  createOrderType: (data: any) => axios.post("/order-types", data),
-  updateOrderType: (id: string | number, data: any) =>
-    axios.patch(`/order-types/${id}`, data),
-  deleteOrderType: (id: string | number) => axios.delete(`/order-types/${id}`),
-};
-
-// Users API
-export const usersAPI = {
-  getUsers: ({ page = 1 }: { page?: number }) => {
-    const params: Record<string, any> = {
-      limit: size,
-    };
-
-    if (page > 1) {
-      params.page = page;
-    }
-
-    return axios.get("/customers", { params });
-  },
-  getUser: (id: string | number) => axios.get(`/customers/${id}`),
-  deleteUser: (id: string | number) => axios.delete(`/users/${id}`),
-};
-
-// Drivers API
-export const driversAPI = {
-  getDrivers: ({ page = 1 }: { page?: number }) => {
-    const params: Record<string, any> = {
-      limit: size,
-    };
-
-    if (page > 1) {
-      params.page = page;
-    }
-
-    return axios.get("/drivers", { params });
-  },
-  deleteDriver: (id: string | number) => axios.delete(`/drivers/${id}`),
 };

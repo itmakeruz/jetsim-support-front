@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Outlet } from "react-router-dom";
+import { useEffect } from "react";
+import { Navigate, Outlet } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import Loader from "@/components/loader/Loader";
 
@@ -7,43 +7,36 @@ import Loader from "@/components/loader/Loader";
 // import Error404 from "./Error404";
 
 export default function ProtectedRoute() {
-  const { token, logout, getProfile } = useAuthStore();
-
-  const [isLoading, setIsLoading] = useState(true);
-  // const [setIsAuthorized] = useState(false);
+  const { token, logout, getProfile, isLoading, setIsLoading, setUser } =
+    useAuthStore();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         if (!token) throw new Error("Token yo'q");
         const res = await getProfile();
-        if (res.success) {
-          // setIsAuthorized(true);
-        } else {
-          console.log(res.message);
-        }
+        setUser(res.data);
       } catch (err) {
         logout();
-        // setIsAuthorized(false);
+        setUser(null);
       } finally {
         setIsLoading(false);
       }
     };
 
     checkAuth();
-  }, [token, getProfile, logout]);
+  }, []);
 
   if (isLoading) return <Loader isFullScreen />;
 
-  // if (!isAuthorized) {
-  //   return <Navigate to="/login" />;
-  // }
+  if (!token) {
+    return <Navigate to="/login" />;
+  }
 
   // Check if the current route is accessible for the user's role
   // if (!isRouteAccessible(location.pathname, currentUser)) {
   //   // Return 404 page for blocked routes
   //   return <Error404 />;
   // }
-
   return <Outlet />;
 }

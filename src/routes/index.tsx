@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 import { adminRoutes } from "./adminRoutes";
 import ProtectedRoute from "./ProtectedRoute";
@@ -6,7 +6,7 @@ import Loader from "@/components/loader/Loader";
 import AdminLayout from "@/layouts/AdminLayouts";
 
 // Lazy load login and error pages
-// const LoginPage = lazy(() => import("@/pages/login/LoginPage"));
+const LoginPage = lazy(() => import("@/pages/login/LoginPage"));
 // const Error404 = lazy(() => import("@/pages/404/Error404"));
 
 export default function AppRoutes() {
@@ -25,9 +25,9 @@ export default function AppRoutes() {
             ))}
           </Route>
         </Route>
-        {/* <Route path="/login" element={<LoginPage />} />
+        <Route path="/login" element={<LoginPage />} />
 
-        <Route path="*" element={<Error404 />} /> */}
+        {/* <Route path="*" element={<Error404 />} /> */}
       </Routes>
     </Suspense>
   );

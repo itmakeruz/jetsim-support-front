@@ -1,11 +1,12 @@
 import axios from "axios";
-export const API_VERSION = "/api/v1";
+import { TOKEN_KEY } from "@/constants/staticDatas";
+export const API_VERSION = "";
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL + API_VERSION, // .env dan oladi
 });
 
 instance.interceptors.request.use((config) => {
-  const token = localStorage.getItem("e_token");
+  const token = localStorage.getItem(TOKEN_KEY);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

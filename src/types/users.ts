@@ -1,4 +1,4 @@
-export type UserType = "all" | "new" | "saved";
+export type UserType = "all" | "new" | "assigned" | "closed";
 
 export type User = {
   id: number;
