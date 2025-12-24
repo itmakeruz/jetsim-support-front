@@ -106,10 +106,9 @@ function ChatPage() {
         const existingIndex = prevTickets.findIndex(
           (t) => t.user_id === newTicket.user_id
         );
-        console.log(existingIndex);
 
         if (existingIndex >= 0) {
-          // Update existing ticket (merge push count and last message)
+          // Update existing ticket (merge push count and last message, but keep original id)
           const updated = [...prevTickets];
           updated[existingIndex] = {
             ...updated[existingIndex],
@@ -117,6 +116,7 @@ function ChatPage() {
             push: newTicket.push,
             formatted_date: newTicket.formatted_date,
             is_online: newTicket.is_online,
+            // Keep the original id from API ticket
           };
           return updated;
         } else {
@@ -145,16 +145,24 @@ function ChatPage() {
 
     // Create a map of updated tickets by user_id
     const updatedMap = new Map(
-      updatedTickets.map((ticket) => [ticket.id, ticket])
+      updatedTickets.map((ticket) => [ticket.user_id, ticket])
     );
 
     // Merge: use updated ticket if exists, otherwise use API ticket
     const mergedTickets = apiTickets.map((apiTicket) => {
       const updatedTicket = updatedMap.get(apiTicket.user_id);
       if (updatedTicket) {
+        // Merge: keep API ticket's id and other fields, but update from socket
+        const merged: Ticket = {
+          ...apiTicket, // Keep all API ticket fields (including correct id)
+          last_message: updatedTicket.last_message,
+          push: updatedTicket.push,
+          formatted_date: updatedTicket.formatted_date,
+          is_online: updatedTicket.is_online,
+        };
         // Remove from map so we know it's been merged
         updatedMap.delete(apiTicket.user_id);
-        return updatedTicket;
+        return merged;
       }
       return apiTicket;
     });
@@ -167,7 +175,6 @@ function ChatPage() {
   if (isLoadingTickets) {
     return <Loader isFullScreen={true} />;
   }
-  console.log(tickets);
 
   return (
     <div className="h-full overflow-hidden bg-white">
