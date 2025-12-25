@@ -12,7 +12,29 @@ interface ChatHeaderProps {
 
 function ChatHeader({ user, togglePanel, isOpen }: ChatHeaderProps) {
   const handleSearch = () => {
-    console.log("search");
+    // Chrome'dagi search funksiyasini ochish
+    // Ctrl+F yoki Cmd+F tugmalarini bosish
+    try {
+      // window.find() API'sini ishlatish (Chrome, Firefox, Safari)
+      if (typeof (window as any).find === "function") {
+        (window as any).find();
+        return;
+      }
+    } catch (error) {
+      console.log("window.find() not available");
+    }
+
+    // Fallback: Keyboard event'ini trigger qilish
+    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+    const event = new KeyboardEvent("keydown", {
+      key: "f",
+      code: "KeyF",
+      ctrlKey: !isMac,
+      metaKey: isMac,
+      bubbles: true,
+      cancelable: true,
+    });
+    document.dispatchEvent(event);
   };
   return (
     <header className="flex items-center justify-between px-6 h-[70px] bg-white border-b">

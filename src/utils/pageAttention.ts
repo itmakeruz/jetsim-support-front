@@ -6,7 +6,10 @@ let blinkCount = 0;
 const MAX_BLINK_COUNT = 10; // 10 marta yonib-o'chadi
 
 // Oynani fokus qilish va title'ni o'zgartirish
-export const requestPageAttention = (message: string = "Yangi xabar") => {
+export const requestPageAttention = (
+  userName: string = "Yangi xabar",
+  messageContent?: string
+) => {
   // Original title'ni saqlash (bir marta)
   if (!originalTitle) {
     originalTitle = document.title;
@@ -19,7 +22,10 @@ export const requestPageAttention = (message: string = "Yangi xabar") => {
   }
 
   // Title'ni yangilash
-  document.title = `🔔 ${message} - ${originalTitle}`;
+  const titleMessage = messageContent
+    ? `${userName}: ${messageContent.substring(0, 30)}...`
+    : userName;
+  document.title = `🔔 ${titleMessage} - ${originalTitle}`;
 
   // Blink effect (title'da yonib-o'chadi)
   blinkCount = 0;
@@ -40,7 +46,10 @@ export const requestPageAttention = (message: string = "Yangi xabar") => {
 
     // Blink effect
     if (blinkCount % 2 === 0) {
-      document.title = `🔔 ${message} - ${originalTitle}`;
+      const titleMessage = messageContent
+        ? `${userName}: ${messageContent.substring(0, 30)}...`
+        : userName;
+      document.title = `🔔 ${titleMessage} - ${originalTitle}`;
     } else {
       document.title = originalTitle;
     }

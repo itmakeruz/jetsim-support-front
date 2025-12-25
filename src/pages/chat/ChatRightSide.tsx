@@ -37,7 +37,7 @@ function ChatRightSide() {
               user={singleTicketResponse.ticket}
               messages={singleTicketResponse.messages ?? []}
             />
-            <ChatComposer />
+            <ChatComposer ticketId={singleTicketResponse.ticket.id} />
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-500">

@@ -4,6 +4,7 @@ import type { NotificationTicket } from "@/types/chat";
 
 let socket: Socket | null = null;
 let notificationCallback: ((ticket: NotificationTicket) => void) | null = null;
+let newMessageCallback: ((data: any) => void) | null = null;
 
 export const initializeSocket = () => {
   if (socket?.connected) {
@@ -11,17 +12,17 @@ export const initializeSocket = () => {
   }
 
   const token = localStorage.getItem(TOKEN_KEY);
-
+  const headers: Record<string, string> = {
+    token: token || "",
+  };
   socket = io("https://support-api.jetsim.ru", {
-    transports: ["websocket", "polling"],
     reconnection: true,
     reconnectionDelay: 1000,
     reconnectionAttempts: 5,
-    auth: {
-      token: token || "",
-    },
-    extraHeaders: {
-      Authorization: token ? `Bearer ${token}` : "",
+    transportOptions: {
+      polling: {
+        extraHeaders: headers,
+      },
     },
   });
 
@@ -60,6 +61,16 @@ export const initializeSocket = () => {
     }
   });
 
+  // NewMessage event listener
+  socket.on("newMessage", (data: any) => {
+    console.log("newMessage event received:", data);
+
+    // Call the callback if set
+    if (newMessageCallback) {
+      newMessageCallback(data);
+    }
+  });
+
   return socket;
 };
 
@@ -94,4 +105,23 @@ export const setNotificationCallback = (
 
 export const removeNotificationCallback = () => {
   notificationCallback = null;
+};
+
+export const sendMessage = (ticketId: number, message: string) => {
+  if (socket?.connected) {
+    socket.emit("sendMessage", {
+      ticket_id: Number(ticketId),
+      message: message,
+    });
+  } else {
+    console.error("Socket is not connected");
+  }
+};
+
+export const setNewMessageCallback = (callback: (data: any) => void) => {
+  newMessageCallback = callback;
+};
+
+export const removeNewMessageCallback = () => {
+  newMessageCallback = null;
 };

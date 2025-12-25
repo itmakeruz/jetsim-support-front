@@ -33,4 +33,10 @@ export const chatAPI = {
       .get<SingleTicketResponse>(`/chat/operator/ticket/${ticketId}/chats`)
       .then((res) => res.data);
   },
+  uploadFile: (ticketId: number, file: File): Promise<any> => {
+    const formData = new FormData();
+    formData.append("ticket_id", ticketId.toString());
+    formData.append("file", file);
+    return axios.post("/chat/client/upload", formData).then((res) => res.data);
+  },
 };

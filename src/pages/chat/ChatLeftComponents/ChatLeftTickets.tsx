@@ -8,6 +8,8 @@ import { useSearchParams } from "react-router-dom";
 import {
   removeNotificationCallback,
   setNotificationCallback,
+  setNewMessageCallback,
+  removeNewMessageCallback,
 } from "@/lib/socket";
 import { playNotificationSound } from "@/utils/playNotificationSound";
 import { showNotification } from "@/utils/notification";
@@ -71,9 +73,7 @@ function ChatLeftTickets() {
             });
 
             // Oynani fokus qilish va title'ni o'zgartirish
-            requestPageAttention(
-              `${userName}: ${messageContent.substring(0, 30)}...`
-            );
+            requestPageAttention(userName, messageContent);
 
             // Keyingi tekshirish uchun saqlaymiz
             lastNotificationRef.current = {
@@ -112,8 +112,92 @@ function ChatLeftTickets() {
 
     setNotificationCallback(handleNotification);
 
+    // NewMessage event handler
+    const handleNewMessage = (data: any) => {
+      console.log("newMessage event data:", data);
+
+      // Agar data ichida ticket_id va message bo'lsa
+      if (data && data.ticket_id) {
+        const isChatOpen = selectedUserId == data.ticket_id.toString();
+
+        setTicketsData((prev: Ticket[]) => {
+          const findTicket = prev.find((t) => t.id === data.ticket_id);
+
+          // Agar chat ochiq bo'lmasa, ovoz va bildirishnoma chiqarish
+          if (!isChatOpen && findTicket) {
+            // Bir xil xabar uchun takrorlanishni oldini olish
+            const messageContent =
+              data.message?.content || data.content || "Yangi xabar keldi";
+            const messageId = messageContent;
+            const isDuplicate =
+              lastNotificationRef.current?.ticketId === data.ticket_id &&
+              lastNotificationRef.current?.messageId === messageId;
+
+            if (!isDuplicate) {
+              playNotificationSound();
+
+              // Bildirishnoma chiqarish
+              const userName = findTicket.user_name || "Yangi xabar";
+
+              showNotification(userName, {
+                body:
+                  messageContent.length > 100
+                    ? messageContent.substring(0, 100) + "..."
+                    : messageContent,
+                tag: `ticket-${data.ticket_id}`,
+                requireInteraction: false,
+                silent: false,
+              });
+
+              // Oynani fokus qilish va title'ni o'zgartirish
+              requestPageAttention(userName, messageContent);
+
+              // Keyingi tekshirish uchun saqlaymiz
+              lastNotificationRef.current = {
+                ticketId: data.ticket_id,
+                messageId: messageId,
+              };
+            }
+          }
+
+          // Ticket topilmasa, yangilash
+          if (!findTicket) {
+            queryClient.invalidateQueries({ queryKey: ["tickets"] });
+            return prev;
+          }
+
+          // Ticket yangilash
+          const updatedTicket: Ticket = {
+            ...findTicket,
+            last_message: {
+              content:
+                data.message?.content ||
+                data.content ||
+                findTicket.last_message?.content ||
+                "",
+            },
+            push: isChatOpen ? 0 : (findTicket.push || 0) + 1,
+          };
+
+          // Ticketni tepaga ko'tarish
+          const rest = prev.filter((t) => t.id !== findTicket?.id);
+          return [updatedTicket, ...rest];
+        });
+
+        // Agar bu xabar ochiq turgan chat uchun bo'lsa, xabarlarni yangilash
+        if (isChatOpen) {
+          queryClient.invalidateQueries({
+            queryKey: ["singleTicket", selectedUserId],
+          });
+        }
+      }
+    };
+
+    setNewMessageCallback(handleNewMessage);
+
     return () => {
       removeNotificationCallback();
+      removeNewMessageCallback();
     };
   }, [selectedUserId, queryClient]);
 
