@@ -51,10 +51,28 @@ const groupMessages = (messages: Message[]): GroupedMessages[] => {
 function ChatMessages({ messages }: ChatMessagesProps) {
   const grouped = groupMessages(messages);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
+  const [playingVideoId, setPlayingVideoId] = useState<number | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  const handleVideoPlay = (messageId: number) => {
+    // Pause all other videos
+    videoRefs.current.forEach((video, id) => {
+      if (id !== messageId && video) {
+        video.pause();
+      }
+    });
+    setPlayingVideoId(messageId);
+  };
+
+  const handleVideoPause = (messageId: number) => {
+    if (playingVideoId === messageId) {
+      setPlayingVideoId(null);
+    }
+  };
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
@@ -85,8 +103,13 @@ function ChatMessages({ messages }: ChatMessagesProps) {
                   {/* VIDEO */}
                   {message.content_type === "video" && (
                     <VideoPlayer
+                      messageId={message.id}
                       src={`${message.base_url}/${message.message.content}`}
                       formattedTime={message.formatted_time}
+                      videoRefs={videoRefs}
+                      onPlay={handleVideoPlay}
+                      onPause={handleVideoPause}
+                      isPlaying={playingVideoId === message.id}
                     />
                   )}
 
@@ -130,30 +153,63 @@ function ChatMessages({ messages }: ChatMessagesProps) {
 
 export default ChatMessages;
 function VideoPlayer({
+  messageId,
   src,
   formattedTime,
+  videoRefs,
+  onPlay,
+  onPause,
+  isPlaying,
 }: {
+  messageId: number;
   src: string;
   formattedTime: string;
+  videoRefs: React.MutableRefObject<Map<number, HTMLVideoElement>>;
+  onPlay: (messageId: number) => void;
+  onPause: (messageId: number) => void;
+  isPlaying: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+
+  useEffect(() => {
+    if (videoRef.current) {
+      videoRefs.current.set(messageId, videoRef.current);
+    }
+    return () => {
+      videoRefs.current.delete(messageId);
+    };
+  }, [messageId, videoRefs]);
 
   const togglePlay = () => {
     if (!videoRef.current) return;
     isPlaying ? videoRef.current.pause() : videoRef.current.play();
   };
 
+  const handlePlay = () => {
+    onPlay(messageId);
+  };
+
+  const handlePause = () => {
+    onPause(messageId);
+  };
+
+  const handleEnded = () => {
+    onPause(messageId);
+  };
+
   return (
     <div className="flex flex-col items-end relative">
       <div
         onClick={togglePlay}
-        className="w-[250px] h-[250px] shrink-0 rounded-full overflow-hidden cursor-pointer"
+        className={`shrink-0 rounded-full overflow-hidden cursor-pointer transition-all duration-300 ${
+          isPlaying ? "w-[350px] h-[350px]" : "w-[250px] h-[250px]"
+        }`}
       >
         <video
           ref={videoRef}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
+          onPlay={handlePlay}
+          onPause={handlePause}
+          onEnded={handleEnded}
           className="w-full h-full object-cover"
           src={src}
         />
