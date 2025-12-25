@@ -28,14 +28,18 @@ function App() {
     };
   }, []);
 
-  // Audio va bildirishnoma ruxsatini birinchi user interaction bilan initialize qilish (global)
+  // Saytga kirganda darhol bildirishnoma ruxsatini so'rash
+  useEffect(() => {
+    requestNotificationPermission();
+  }, []);
+
+  // Audio'ni birinchi user interaction bilan initialize qilish (global)
   useEffect(() => {
     if (isInitializedRef.current) return;
 
     const handleUserInteraction = () => {
       if (!isInitializedRef.current) {
         initializeNotificationSound();
-        requestNotificationPermission(); // Bildirishnoma ruxsatini so'rash
         isInitializedRef.current = true;
         // Bir marta initialize qilingandan keyin event listener'larni olib tashlash
         document.removeEventListener("click", handleUserInteraction);

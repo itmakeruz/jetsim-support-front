@@ -2,7 +2,7 @@ import { chatAPI } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ChatUser from "../components/ChatUser";
 import ChatUserSkeleton from "../components/ChatUserSkeleton";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import type { NotificationTicket, Ticket } from "@/types/chat";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -11,12 +11,17 @@ import {
 } from "@/lib/socket";
 import { playNotificationSound } from "@/utils/playNotificationSound";
 import { showNotification } from "@/utils/notification";
+import { requestPageAttention } from "@/utils/pageAttention";
 
 function ChatLeftTickets() {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const selectedUserId = searchParams.get("userId");
   const [ticketsData, setTicketsData] = useState<Ticket[]>([]);
+  const lastNotificationRef = useRef<{
+    ticketId: number;
+    messageId?: string;
+  } | null>(null);
   const { data: ticketsResponse, isLoading: isLoadingTickets } = useQuery({
     queryKey: ["tickets"],
     queryFn: () => chatAPI.getTickets(),
@@ -35,15 +40,47 @@ function ChatLeftTickets() {
 
         // Agar chat ochiq bo'lmasa, ovoz va bildirishnoma chiqarish
         if (!isChatOpen && findTicket) {
-          playNotificationSound();
+          // Bir xil xabar uchun takrorlanishni oldini olish
+          const messageId = newTicket.last_message?.content;
+          const isDuplicate =
+            lastNotificationRef.current?.ticketId === newTicket.ticket_id &&
+            lastNotificationRef.current?.messageId === messageId;
 
-          // Bildirishnoma chiqarish
-          showNotification(findTicket.user_name || "Yangi xabar", {
-            body: newTicket.last_message?.content || "Yangi xabar keldi",
-            tag: `ticket-${newTicket.ticket_id}`, // Bir xil ticket uchun eski bildirishnomani yangilash
-            requireInteraction: false,
-            silent: false,
-          });
+          if (!isDuplicate) {
+            playNotificationSound();
+
+            // Bildirishnoma chiqarish
+            const messageContent =
+              newTicket.last_message?.content || "Yangi xabar keldi";
+            const userName = findTicket.user_name || "Yangi xabar";
+
+            console.log(
+              "Bildirishnoma chiqarishga harakat:",
+              userName,
+              messageContent
+            );
+
+            showNotification(userName, {
+              body:
+                messageContent.length > 100
+                  ? messageContent.substring(0, 100) + "..."
+                  : messageContent,
+              tag: `ticket-${newTicket.ticket_id}`, // Bir xil ticket uchun eski bildirishnomani yangilash
+              requireInteraction: false,
+              silent: false,
+            });
+
+            // Oynani fokus qilish va title'ni o'zgartirish
+            requestPageAttention(
+              `${userName}: ${messageContent.substring(0, 30)}...`
+            );
+
+            // Keyingi tekshirish uchun saqlaymiz
+            lastNotificationRef.current = {
+              ticketId: newTicket.ticket_id,
+              messageId: messageId,
+            };
+          }
         }
 
         // ❌ YO'Q bo'lsa
