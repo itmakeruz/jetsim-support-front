@@ -6,6 +6,7 @@ import { toast } from "react-toastify";
 import CustomInput from "@/components/formElements/CustomInput";
 import UniversalBtn from "@/components/buttons/UniversalBtn";
 import { handleChange } from "@/utils/handleChange";
+import { reconnectSocket } from "@/lib/socket";
 
 import { Loader2 } from "lucide-react";
 
@@ -34,6 +35,8 @@ export default function Login() {
     setLoading(true);
     const result = await login(form);
     if (result.success) {
+      // Login qilgandan keyin socket reconnect qilish
+      reconnectSocket();
       toast.success(result.message);
       setLoading(false);
       navigate("/");

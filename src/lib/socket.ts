@@ -70,6 +70,14 @@ export const disconnectSocket = () => {
   }
 };
 
+export const reconnectSocket = () => {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+  return initializeSocket();
+};
+
 export const getSocket = () => socket;
 
 export const exitChat = (ticketId?: number | null) => {

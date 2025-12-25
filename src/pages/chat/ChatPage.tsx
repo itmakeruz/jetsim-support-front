@@ -26,12 +26,16 @@ function ChatPage() {
 
   const { data: ticketsResponse, isLoading: isLoadingTickets } = useQuery({
     queryKey: ["tickets"],
-    queryFn: () =>
-      chatAPI.getTickets().then((res) => {
-        setTicketsData(res.tickets);
-        return res;
-      }),
+    queryFn: () => chatAPI.getTickets(),
   });
+
+  // ticketsResponse o'zgarganda ticketsData ni yangilash
+  useEffect(() => {
+    if (ticketsResponse?.tickets) {
+      setTicketsData(ticketsResponse.tickets);
+    }
+  }, [ticketsResponse]);
+
   const { data: singleTicketResponse, isLoading: isLoadingSingleTicket } =
     useQuery({
       queryKey: ["singleTicket", selectedUserId],
@@ -110,7 +114,7 @@ function ChatPage() {
       setTicketsData((prev: Ticket[]) => {
         const findTicket = prev.find((t) => t.id === newTicket.ticket_id);
 
-        // ❌ YO‘Q bo‘lsa
+        // ❌ YO'Q bo'lsa
         if (!findTicket) {
           queryClient.invalidateQueries({ queryKey: ["tickets"] });
           return prev;
@@ -123,10 +127,17 @@ function ChatPage() {
           push: (findTicket.push || 0) + 1,
         };
 
-        // eski joyidan olib tashlab, tepaga qo‘yamiz
+        // eski joyidan olib tashlab, tepaga qo'yamiz
         const rest = prev.filter((t) => t.id !== findTicket?.id);
         return [updatedTicket, ...rest];
       });
+
+      // Agar bu xabar ochiq turgan chat uchun bo'lsa, xabarlarni yangilash
+      if (selectedUserId === newTicket.ticket_id) {
+        queryClient.invalidateQueries({
+          queryKey: ["singleTicket", selectedUserId],
+        });
+      }
     };
 
     setNotificationCallback(handleNotification);
@@ -134,7 +145,7 @@ function ChatPage() {
     return () => {
       removeNotificationCallback();
     };
-  }, [ticketsResponse?.tickets]);
+  }, [ticketsResponse?.tickets, selectedUserId, queryClient]);
 
   if (isLoadingTickets) {
     return <Loader isFullScreen={true} />;

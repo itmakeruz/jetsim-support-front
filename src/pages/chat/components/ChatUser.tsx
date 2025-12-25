@@ -29,7 +29,11 @@ function ChatUser({ ticket, isActive, onSelect }: ChatUserProps) {
       }`}
     >
       <div className="flex items-center justify-between gap-3">
-        <UserAvatar size="lg" name={ticket?.user_name || ""} />
+        <UserAvatar
+          size="lg"
+          name={ticket?.user_name || ""}
+          image={`${ticket?.base_url}/${ticket?.user_image || ""}`}
+        />
         <div className="flex flex-col justify-between w-full">
           <div className="flex gap-1 justify-between h-[24px] items-center">
             <div className="text-[15px] leading-none font-medium">

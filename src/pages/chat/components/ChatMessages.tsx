@@ -123,6 +123,23 @@ function ChatMessages({ messages }: ChatMessagesProps) {
                     />
                   )}
 
+                  {/* PHOTO */}
+                  {message.content_type === "photo" && (
+                    <div className="flex flex-col items-end relative">
+                      <div className="shrink-0 rounded-[12px] overflow-hidden cursor-pointer max-w-[350px]">
+                        <img
+                          src={`${message.base_url}/${message.message.content}`}
+                          alt="Photo"
+                          className="w-full h-auto object-cover"
+                          loading="lazy"
+                        />
+                      </div>
+                      <span className="mt-1 text-[11px] text-gray-400 text-right">
+                        {message.formatted_time?.slice(0, 5)}
+                      </span>
+                    </div>
+                  )}
+
                   {/* TEXT */}
                   {message.content_type === "text" && (
                     <div

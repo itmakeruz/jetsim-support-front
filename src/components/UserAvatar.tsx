@@ -2,6 +2,7 @@ interface UserAvatarProps {
   name: string;
   size?: "sm" | "md" | "lg";
   className?: string;
+  image?: string;
 }
 
 const sizeClasses = {
@@ -14,6 +15,7 @@ export default function UserAvatar({
   name,
   size = "md",
   className = "",
+  image,
 }: UserAvatarProps) {
   const initial = name?.charAt(0)?.toUpperCase() || "";
 
@@ -21,7 +23,11 @@ export default function UserAvatar({
     <div
       className={`${sizeClasses[size]} shrink-0 font-bold rounded-full bg-main-color text-white overflow-hidden flex items-center justify-center ${className}`}
     >
-      {initial}
+      {image ? (
+        <img src={image} alt={name} className="w-full h-full object-cover" />
+      ) : (
+        initial
+      )}
     </div>
   );
 }
