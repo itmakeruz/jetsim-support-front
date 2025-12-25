@@ -47,17 +47,21 @@ export type TicketsResponse = {
   totalPages: number;
 };
 export type SingleTicketResponse = {
-  user: {
-    id: number;
-    chat_id: string;
-    name: string;
-    phone: string;
-    date: string;
-    last_message: string | null;
-    is_block: boolean;
-    is_online: boolean;
-    push: number;
-  };
+  user: User;
   ticket: Ticket;
   messages: Message[];
 };
+export type User = {
+  id: number;
+  chat_id: string;
+  name: string;
+  phone: string;
+  date: string;
+  last_message: string | null;
+  is_block: boolean;
+  is_online: boolean;
+  push: number;
+  base_url: string;
+  user_image: string;
+};
+export type FilterType = "all" | "active" | "archived" | "spam" | "trash";

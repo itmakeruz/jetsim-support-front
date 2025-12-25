@@ -1,17 +1,16 @@
-import { MessageCircleMore, type LucideIcon } from "lucide-react";
-import type { IconType } from "react-icons";
+import { ChatIcon, RobotIcon } from "@/assets/icons";
 
 interface MenuItem {
   path?: string;
   label: string;
-  icon: LucideIcon | IconType;
+  icon: React.ReactNode | (() => React.ReactNode);
   children?: MenuItem[];
   isCountHas?: boolean;
 }
 
 const adminMenu: MenuItem[] = [
-  { path: "/", label: "Чат", icon: MessageCircleMore, isCountHas: false },
+  { path: "/", label: "Чат", icon: ChatIcon, isCountHas: false },
+  { path: "/chat-bot", label: "Робот", icon: RobotIcon, isCountHas: false },
 ];
 
 export default adminMenu;
-export type { MenuItem };

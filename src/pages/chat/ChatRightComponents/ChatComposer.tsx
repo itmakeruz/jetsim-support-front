@@ -30,7 +30,7 @@ function ChatComposer() {
       <input
         type="text"
         placeholder="Введите сообщение..."
-        className="flex-1 bg-[#F5F7FB] border border-gray-200 rounded px-3 py-2 outline-none transition-colors"
+        className="flex-1 bg-[#F5F7FB] text-title-color border border-gray-200 rounded px-3 py-2 outline-none transition-colors"
       />
       <button
         type="submit"

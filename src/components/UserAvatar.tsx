@@ -1,3 +1,5 @@
+import LazyImage from "./LazyImage";
+
 interface UserAvatarProps {
   name: string;
   size?: "sm" | "md" | "lg";
@@ -24,7 +26,13 @@ export default function UserAvatar({
       className={`${sizeClasses[size]} shrink-0 font-bold rounded-full bg-main-color text-white overflow-hidden flex items-center justify-center ${className}`}
     >
       {image ? (
-        <img src={image} alt={name} className="w-full h-full object-cover" />
+        <LazyImage
+          src={image}
+          alt={name}
+          className="w-full h-full object-cover"
+          effect="blur"
+          threshold={100}
+        />
       ) : (
         initial
       )}

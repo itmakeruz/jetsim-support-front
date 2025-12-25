@@ -1,18 +1,28 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 
 @custom-variant dark (&:is(.dark *));
 
 * {
-  font-family: "Inter", "PT Sans", sans-serif;
+  font-family: "Roboto", sans-serif !important;
 }
 button {
   cursor: pointer;
 }
+
 @theme {
   --color-main-color: #112d6c;
   --color-main-black: #000000;
+
+  --color-link-color: #2563eb;
+  --color-link-bg: #bfdbfe;
+  --color-inactive-link-color: #334155;
+  --color-inactive-link-bg: #e2e8f0;
+  --color-border-color: #dbeafe;
+  --color-title-color: #475569;
+  --color-text-color: #64748b;
+  --color-ticket-active-bg: #f1f5f9;
 }
 
 @theme inline {
@@ -196,4 +206,7 @@ textarea {
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+svg {
+  color: inherit;
 }
