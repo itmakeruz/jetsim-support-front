@@ -10,7 +10,7 @@ interface MenuItem {
 }
 
 const adminMenu: MenuItem[] = [
-  { path: "/", label: "Чат", icon: MessageCircleMore, isCountHas: true },
+  { path: "/", label: "Чат", icon: MessageCircleMore, isCountHas: false },
 ];
 
 export default adminMenu;

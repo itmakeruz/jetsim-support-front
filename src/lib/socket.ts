@@ -1,5 +1,4 @@
 import { io, Socket } from "socket.io-client";
-import { showToast } from "@/utils/toastHelper";
 import { TOKEN_KEY } from "@/constants/staticDatas";
 import type { Ticket } from "@/types/chat";
 
@@ -40,14 +39,9 @@ export const initializeSocket = () => {
 
   // Notification event listener
   socket.on("notification", (data: any) => {
+    // Convert notification data to Ticket format
     console.log(data);
 
-    // Show notification using toast
-    const message =
-      data?.last_message?.content || data?.text || "Yangi bildirishnoma";
-    showToast.info(message);
-
-    // Convert notification data to Ticket format
     if (data && data.id) {
       const ticket: Ticket = {
         id: data.id,

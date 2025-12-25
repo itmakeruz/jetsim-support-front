@@ -1,5 +1,5 @@
 import type { Message, Ticket } from "@/types/chat";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ChatMessagesProps {
   user: Ticket;
@@ -34,7 +34,6 @@ const groupMessages = (messages: Message[]): GroupedMessages[] => {
   const groups: Record<string, Message[]> = {};
 
   messages.forEach((message) => {
-    // Extract date part (YYYY-MM-DD) from ISO date string
     const dateKey = message.date.split("T")[0];
     if (!groups[dateKey]) groups[dateKey] = [];
     groups[dateKey].push(message);
@@ -49,21 +48,19 @@ const groupMessages = (messages: Message[]): GroupedMessages[] => {
     }));
 };
 
-function ChatMessages({ user, messages }: ChatMessagesProps) {
+function ChatMessages({ messages }: ChatMessagesProps) {
   const grouped = groupMessages(messages);
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
+    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
     <div className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6">
       {grouped.map((group) => (
-        <div key={group.date} className="space-y-4">
-          {/* Date divider */}
+        <div key={group.date} className="space-y-2">
+          {/* DATE */}
           <div className="text-center relative text-[12px] text-gray-500 before:content-[''] before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:h-px before:w-full before:bg-gray-200">
             <span className="relative z-10 bg-white px-2 py-1 rounded-full">
               {group.label}
@@ -80,63 +77,45 @@ function ChatMessages({ user, messages }: ChatMessagesProps) {
                   isMe ? "justify-end" : "justify-start"
                 }`}
               >
-                {!isMe && (
-                  <div className="w-9 h-9 shrink-0 text-base font-bold rounded-full bg-main-color text-white overflow-hidden flex items-center justify-center">
-                    {user.user_name.charAt(0)}
-                  </div>
-                )}
-
                 <div
                   className={`max-w-[50%] flex flex-col gap-2 ${
-                    isMe ? "items-end" : "items-start mb-4"
+                    isMe ? "items-end" : "items-start"
                   }`}
                 >
-                  <div
-                    className={`relative min-w-[200px] text-[14px] px-4 py-3 flex flex-col gap-2 leading-[1.4]
-                    ${
-                      isMe
-                        ? "bg-[#f5f7fb] rounded-[4px_4px_0px_4px] text-gray-900 chat-bubble-me"
-                        : "bg-main-color rounded-[4px_4px_4px_0] text-white chat-bubble-other"
-                    }`}
-                  >
-                    {message.message.content}
+                  {/* VIDEO */}
+                  {message.content_type === "video" && (
+                    <VideoPlayer
+                      src={`${message.base_url}/${message.message.content}`}
+                      formattedTime={message.formatted_time}
+                    />
+                  )}
 
-                    {/* Attachments */}
-                    {/* {message.attachments && (
-                      <div className="flex gap-2 flex-wrap">
-                        {message.attachments.map((url) => {
-                          const fileName = url.split("/").pop();
+                  {/* VOICE */}
+                  {message.content_type === "voice" && (
+                    <VoicePlayer
+                      src={`${message.base_url}/${message.message.content}`}
+                      formattedTime={message.formatted_time}
+                    />
+                  )}
 
-                          return (
-                            <div
-                              key={url}
-                              className="relative group w-32 h-24 rounded-[2px] border overflow-hidden bg-gray-200"
-                            >
-                              <img
-                                src={url}
-                                alt="attachment"
-                                className="w-full h-full object-cover"
-                              />
-
-                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
-                                <a
-                                  href={url}
-                                  download={fileName}
-                                  className="w-9 h-9 rounded-full bg-white flex items-center justify-center shadow"
-                                >
-                                  <Download className="w-5 h-5 text-main-color" />
-                                </a>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )} */}
-
-                    <span className="text-[12px] text-gray-500 self-end">
-                      {message.formatted_time}
-                    </span>
-                  </div>
+                  {/* TEXT */}
+                  {message.content_type === "text" && (
+                    <div
+                      className={`min-w-[200px] px-3 py-2 text-[13px] leading-[1.4]
+                      ${
+                        isMe
+                          ? "bg-[#f5f7fb] rounded-[12px_12px_0px_12px] text-gray-900"
+                          : "bg-main-color rounded-[12px_12px_12px_0] text-white"
+                      }`}
+                    >
+                      <p className="whitespace-pre-wrap wrap-break-word">
+                        {message.message.content}
+                      </p>
+                      <span className="block mt-1 text-[11px] text-gray-400 text-right">
+                        {message.formatted_time?.slice(0, 5)}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
             );
@@ -144,10 +123,60 @@ function ChatMessages({ user, messages }: ChatMessagesProps) {
         </div>
       ))}
 
-      {/* 👇 SCROLL ANCHOR */}
       <div ref={bottomRef} />
     </div>
   );
 }
 
 export default ChatMessages;
+function VideoPlayer({
+  src,
+  formattedTime,
+}: {
+  src: string;
+  formattedTime: string;
+}) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    isPlaying ? videoRef.current.pause() : videoRef.current.play();
+  };
+
+  return (
+    <div className="flex flex-col items-end relative">
+      <div
+        onClick={togglePlay}
+        className="w-[250px] h-[250px] shrink-0 rounded-full overflow-hidden cursor-pointer"
+      >
+        <video
+          ref={videoRef}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          className="w-full h-full object-cover"
+          src={src}
+        />
+      </div>
+      <span className="mt-1 text-[12px] glass-effect px-1 py-0.5 rounded-full absolute bottom-0 right-2 text-gray-500">
+        {formattedTime?.slice(0, 5)}
+      </span>
+    </div>
+  );
+}
+function VoicePlayer({
+  src,
+  formattedTime,
+}: {
+  src: string;
+  formattedTime: string;
+}) {
+  return (
+    <div className="flex flex-col items-end w-[240px]">
+      <audio controls className="w-full" src={src} />
+      <span className="mt-1 text-[12px] text-gray-400">
+        {formattedTime.slice(0, 5)}
+      </span>
+    </div>
+  );
+}

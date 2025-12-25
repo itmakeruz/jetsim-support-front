@@ -61,7 +61,7 @@ export function ChatTabs({
       onValueChange={(value: string) => setActiveTab(value)}
       defaultValue="all"
     >
-      <TabsList className="w-full bg-white relative rounded-none min-h-[48px]">
+      <TabsList className="w-full bg-white relative rounded-none min-h-[50px]">
         {tabConfigs.map((tab) => (
           <TabsTrigger
             key={tab.value}

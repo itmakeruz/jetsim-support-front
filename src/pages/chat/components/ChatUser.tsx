@@ -1,5 +1,6 @@
 import type { Ticket } from "@/types/chat";
 import type { KeyboardEvent } from "react";
+import UserAvatar from "@/components/UserAvatar";
 
 interface ChatUserProps {
   ticket: Ticket;
@@ -24,14 +25,12 @@ function ChatUser({ ticket, isActive, onSelect }: ChatUserProps) {
       onClick={() => onSelect?.(ticket)}
       onKeyDown={handleKeyDown}
       className={`min-h-[60px] hover:bg-gray-100 cursor-pointer px-2 py-3 ${
-        isActive ? "bg-[#E9F1FF]" : ""
+        isActive ? "bg-[#F5F5F5]" : ""
       }`}
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 shrink-0 text-base font-bold rounded-full bg-main-color text-white overflow-hidden flex items-center justify-center">
-            {ticket.user_name.charAt(0)}
-          </div>
+          <UserAvatar name={ticket?.user_name || ""} />
           <div className="flex flex-col gap-1">
             <div className="text-sm leading-none font-medium">
               {ticket.user_name}
@@ -44,7 +43,7 @@ function ChatUser({ ticket, isActive, onSelect }: ChatUserProps) {
         <div className="flex flex-col gap-1 items-end">
           <span className="leading-none text-xs">{ticket.formatted_date}</span>
           {ticket.push > 0 && (
-            <span className="leading-none bg-[#27AE60] p-1 text-white text-[10px] font-medium rounded-full min-w-4 aspect-square shrink-0 flex items-center justify-center">
+            <span className="leading-none bg-[#78E378] p-1 text-white text-[10px] font-medium rounded-full min-w-4 aspect-square shrink-0 flex items-center justify-center">
               {ticket.push}
             </span>
           )}
