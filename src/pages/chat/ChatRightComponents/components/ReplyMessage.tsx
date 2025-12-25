@@ -15,9 +15,16 @@ export default function ReplyMessage({
   const replyContent = message.message.reply_content;
   const replyText = replyContent?.content || "";
 
+  const handleDoubleClick = () => {
+    if (onReply) {
+      onReply(message);
+    }
+  };
+
   return (
     <div
-      className={`min-w-[200px] px-3 py-2 text-[13px] leading-[1.4] group relative
+      onDoubleClick={handleDoubleClick}
+      className={`min-w-[200px] px-3 py-2 text-[13px] leading-[1.4] group relative cursor-pointer
       ${
         isMe
           ? "bg-[#f5f7fb] rounded-[12px_12px_0px_12px] text-gray-900"

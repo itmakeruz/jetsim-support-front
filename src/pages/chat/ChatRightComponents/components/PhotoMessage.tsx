@@ -15,8 +15,24 @@ export default function PhotoMessage({
   onImageLoad,
   onReply,
 }: PhotoMessageProps) {
+  const handleDoubleClick = (e: React.MouseEvent) => {
+    if (onReply) {
+      onReply(message);
+    }
+  };
+
+  const handleImageClick = (e: React.MouseEvent) => {
+    // Double-click bo'lmasa, lightbox ochish
+    if (e.detail === 1) {
+      onImageClick(message);
+    }
+  };
+
   return (
-    <div className="flex flex-col items-end relative group">
+    <div
+      onDoubleClick={handleDoubleClick}
+      className="flex flex-col items-end relative group"
+    >
       {onReply && (
         <button
           onClick={() => onReply(message)}
@@ -28,7 +44,7 @@ export default function PhotoMessage({
       )}
       <div
         className="shrink-0 rounded-[12px] overflow-hidden cursor-pointer max-w-[350px]"
-        onClick={() => onImageClick(message)}
+        onClick={handleImageClick}
       >
         <LazyImage
           src={`${message.base_url}/${message.message.content}`}
