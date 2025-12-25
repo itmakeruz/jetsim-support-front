@@ -9,6 +9,7 @@ import {
   removeNotificationCallback,
   setNotificationCallback,
 } from "@/lib/socket";
+import { playNotificationSound } from "@/utils/playNotificationSound";
 
 function ChatLeftTickets() {
   const queryClient = useQueryClient();
@@ -26,6 +27,13 @@ function ChatLeftTickets() {
   }, [ticketsResponse]);
   useEffect(() => {
     const handleNotification = (newTicket: NotificationTicket) => {
+      const isChatOpen = selectedUserId == newTicket.ticket_id.toString();
+
+      // Agar chat ochiq bo'lmasa, ovoz chiqarish
+      if (!isChatOpen) {
+        playNotificationSound();
+      }
+
       setTicketsData((prev: Ticket[]) => {
         const findTicket = prev.find((t) => t.id === newTicket.ticket_id);
 
@@ -36,7 +44,6 @@ function ChatLeftTickets() {
         }
 
         // Agar chat ochiq bo'lsa, push 0, aks holda push oshiriladi
-        const isChatOpen = selectedUserId == newTicket.ticket_id.toString();
         const updatedTicket: Ticket = {
           ...findTicket, // id va boshqa fieldlar saqlanadi
           last_message: { content: newTicket.last_message.content },
@@ -50,7 +57,7 @@ function ChatLeftTickets() {
       });
 
       // Agar bu xabar ochiq turgan chat uchun bo'lsa, xabarlarni yangilash
-      if (selectedUserId == newTicket.ticket_id.toString()) {
+      if (isChatOpen) {
         queryClient.invalidateQueries({
           queryKey: ["singleTicket", selectedUserId],
         });

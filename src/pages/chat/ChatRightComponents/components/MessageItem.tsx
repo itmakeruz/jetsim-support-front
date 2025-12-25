@@ -3,6 +3,7 @@ import VideoPlayer from "@/pages/chat/components/VideoPlayer";
 import VoicePlayer from "@/pages/chat/components/VoicePlayer";
 import PhotoMessage from "./PhotoMessage";
 import TextMessage from "./TextMessage";
+import SimpleVideoPlayer from "./SimpleVideoPlayer";
 
 interface MessageItemProps {
   message: Message;
@@ -37,6 +38,16 @@ export default function MessageItem({
         }`}
       >
         {message.content_type === "video" && (
+          <SimpleVideoPlayer
+            message={message}
+            videoRefs={videoRefs}
+            playingVideoId={playingVideoId}
+            onVideoPlay={onVideoPlay}
+            onVideoPause={onVideoPause}
+          />
+        )}
+
+        {message.content_type === "telegram_video" && (
           <VideoPlayer
             messageId={message.id}
             src={`${message.base_url}/${message.message.content}`}
