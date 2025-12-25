@@ -10,7 +10,7 @@ interface ChatMessagesProps {
   messages: Message[];
 }
 
-function ChatMessages({ messages }: ChatMessagesProps) {
+function ChatMessages({ messages, user }: ChatMessagesProps) {
   const grouped = groupMessages(messages);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -18,20 +18,40 @@ function ChatMessages({ messages }: ChatMessagesProps) {
   const [playingVideoId, setPlayingVideoId] = useState<number | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const lastUserIdRef = useRef<number | null>(null);
 
-  const scrollToBottom = () => {
-    if (bottomRef.current) {
-      bottomRef.current.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (instant = false) => {
+    if (containerRef.current) {
+      // scrollTop orqali to'g'ridan-to'g'ri pastga scroll qilish
+      containerRef.current.scrollTop = containerRef.current.scrollHeight;
+    } else if (bottomRef.current) {
+      // Fallback: scrollIntoView
+      bottomRef.current.scrollIntoView({
+        behavior: instant ? "auto" : "smooth",
+      });
     }
   };
 
+  // Yangi chatga kirganda to'g'ridan-to'g'ri pastga scroll qilish
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    if (user.id !== lastUserIdRef.current) {
+      // Yangi chatga kirildi
+      lastUserIdRef.current = user.id;
+      if (messages.length > 0) {
+        // Kichik delay bilan to'g'ridan-to'g'ri pastga scroll qilish
+        setTimeout(() => {
+          scrollToBottom(true);
+        }, 50);
+      }
+    } else if (messages.length > 0) {
+      // Keyingi xabarlar kelganda smooth scroll
+      scrollToBottom(false);
+    }
+  }, [messages, user.id]);
 
   const handleImageLoad = () => {
     setTimeout(() => {
-      scrollToBottom();
+      scrollToBottom(false);
     }, 100);
   };
 
