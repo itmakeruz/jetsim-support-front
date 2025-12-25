@@ -1,24 +1,47 @@
-import { useRef, useState } from "react";
-import { Image as ImageIcon, Paperclip, Send, Smile } from "lucide-react";
+import { useRef, useState, useEffect } from "react";
+import { Image as ImageIcon, Paperclip, Send, Smile, X } from "lucide-react";
 import { sendMessage } from "@/lib/socket";
 import { chatAPI } from "@/lib/api";
 import { toast } from "react-toastify";
+import type { Message } from "@/types/chat";
 
 interface ChatComposerProps {
   ticketId: number | null;
+  replyMessage?: Message | null;
+  onReplyCancel?: () => void;
 }
 
-function ChatComposer({ ticketId }: ChatComposerProps) {
+function ChatComposer({
+  ticketId,
+  replyMessage,
+  onReplyCancel,
+}: ChatComposerProps) {
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLInputElement>(null);
+
+  // Reply qilganda input'ga focus qilish
+  useEffect(() => {
+    if (replyMessage && messageInputRef.current) {
+      // Kichik delay bilan focus qilish (UI yangilanishi uchun)
+      setTimeout(() => {
+        messageInputRef.current?.focus();
+      }, 100);
+    }
+  }, [replyMessage]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (message.trim() && ticketId) {
-      sendMessage(ticketId, message.trim());
+      sendMessage(
+        ticketId,
+        message.trim(),
+        replyMessage?.id
+      );
       setMessage("");
+      onReplyCancel?.();
     }
   };
 
@@ -74,10 +97,33 @@ function ChatComposer({ ticketId }: ChatComposerProps) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="bg-white border-t px-4 py-3 flex items-center gap-3"
-    >
+    <div className="bg-white border-t">
+      {/* Reply preview */}
+      {replyMessage && (
+        <div className="px-4 py-2 bg-gray-50 border-b flex items-center justify-between">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-[11px] font-medium text-gray-600">
+                Reply to:
+              </span>
+            </div>
+            <p className="text-[12px] text-gray-700 line-clamp-1">
+              {replyMessage.message.content}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onReplyCancel}
+            className="ml-2 p-1 hover:bg-gray-200 rounded-full transition-colors"
+          >
+            <X className="w-4 h-4 text-gray-500" />
+          </button>
+        </div>
+      )}
+      <form
+        onSubmit={handleSubmit}
+        className="px-4 py-3 flex items-center gap-3"
+      >
       <button
         type="button"
         className="text-gray-500 hover:text-main-color transition-colors"
@@ -114,6 +160,7 @@ function ChatComposer({ ticketId }: ChatComposerProps) {
         className="hidden"
       />
       <input
+        ref={messageInputRef}
         type="text"
         value={message}
         onChange={(e) => setMessage(e.target.value)}
@@ -129,6 +176,7 @@ function ChatComposer({ ticketId }: ChatComposerProps) {
         <span className="hidden sm:inline">Отправить</span>
       </button>
     </form>
+    </div>
   );
 }
 

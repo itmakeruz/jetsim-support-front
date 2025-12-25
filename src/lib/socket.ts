@@ -107,12 +107,26 @@ export const removeNotificationCallback = () => {
   notificationCallback = null;
 };
 
-export const sendMessage = (ticketId: number, message: string) => {
+export const sendMessage = (
+  ticketId: number,
+  message: string,
+  replyMessageId?: number
+) => {
   if (socket?.connected) {
-    socket.emit("sendMessage", {
+    const payload: {
+      ticket_id: number;
+      message: string;
+      reply_message_id?: number;
+    } = {
       ticket_id: Number(ticketId),
       message: message,
-    });
+    };
+
+    if (replyMessageId) {
+      payload.reply_message_id = replyMessageId;
+    }
+
+    socket.emit("sendMessage", payload);
   } else {
     console.error("Socket is not connected");
   }

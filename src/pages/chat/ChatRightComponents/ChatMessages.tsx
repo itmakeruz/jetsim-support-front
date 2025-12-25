@@ -8,9 +8,10 @@ import { groupMessages } from "./utils/messageUtils";
 interface ChatMessagesProps {
   user: Ticket;
   messages: Message[];
+  onReply?: (message: Message) => void;
 }
 
-function ChatMessages({ messages, user }: ChatMessagesProps) {
+function ChatMessages({ messages, user, onReply }: ChatMessagesProps) {
   const grouped = groupMessages(messages);
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -104,6 +105,7 @@ function ChatMessages({ messages, user }: ChatMessagesProps) {
                 onVideoPause={handleVideoPause}
                 onImageClick={handleImageClick}
                 onImageLoad={handleImageLoad}
+                onReply={onReply}
               />
             );
           })}

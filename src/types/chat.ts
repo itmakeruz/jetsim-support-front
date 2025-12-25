@@ -9,6 +9,11 @@ export type Message = {
   is_ready: boolean;
   message: {
     content: string;
+    reply_content?: {
+      content: string;
+      content_type: string;
+    };
+    reply_message_id?: number;
   };
 };
 

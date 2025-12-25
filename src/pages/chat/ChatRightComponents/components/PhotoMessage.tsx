@@ -1,19 +1,31 @@
 import type { Message } from "@/types/chat";
 import LazyImage from "@/components/LazyImage";
+import { Reply } from "lucide-react";
 
 interface PhotoMessageProps {
   message: Message;
   onImageClick: (message: Message) => void;
   onImageLoad: () => void;
+  onReply?: (message: Message) => void;
 }
 
 export default function PhotoMessage({
   message,
   onImageClick,
   onImageLoad,
+  onReply,
 }: PhotoMessageProps) {
   return (
-    <div className="flex flex-col items-end relative">
+    <div className="flex flex-col items-end relative group">
+      {onReply && (
+        <button
+          onClick={() => onReply(message)}
+          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full bg-white/90 hover:bg-white text-gray-700 z-10"
+          title="Reply"
+        >
+          <Reply className="w-3.5 h-3.5" />
+        </button>
+      )}
       <div
         className="shrink-0 rounded-[12px] overflow-hidden cursor-pointer max-w-[350px]"
         onClick={() => onImageClick(message)}
