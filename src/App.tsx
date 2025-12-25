@@ -6,6 +6,7 @@ import "react-toastify/dist/ReactToastify.css";
 import AppRoutes from "./routes";
 import { initializeSocket, disconnectSocket } from "./lib/socket";
 import { initializeNotificationSound } from "./utils/playNotificationSound";
+import { requestNotificationPermission } from "./utils/notification";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -27,13 +28,14 @@ function App() {
     };
   }, []);
 
-  // Audio'ni birinchi user interaction bilan initialize qilish (global)
+  // Audio va bildirishnoma ruxsatini birinchi user interaction bilan initialize qilish (global)
   useEffect(() => {
     if (isInitializedRef.current) return;
 
     const handleUserInteraction = () => {
       if (!isInitializedRef.current) {
         initializeNotificationSound();
+        requestNotificationPermission(); // Bildirishnoma ruxsatini so'rash
         isInitializedRef.current = true;
         // Bir marta initialize qilingandan keyin event listener'larni olib tashlash
         document.removeEventListener("click", handleUserInteraction);

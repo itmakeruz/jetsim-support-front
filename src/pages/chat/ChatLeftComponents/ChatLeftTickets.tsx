@@ -10,6 +10,7 @@ import {
   setNotificationCallback,
 } from "@/lib/socket";
 import { playNotificationSound } from "@/utils/playNotificationSound";
+import { showNotification } from "@/utils/notification";
 
 function ChatLeftTickets() {
   const queryClient = useQueryClient();
@@ -29,13 +30,21 @@ function ChatLeftTickets() {
     const handleNotification = (newTicket: NotificationTicket) => {
       const isChatOpen = selectedUserId == newTicket.ticket_id.toString();
 
-      // Agar chat ochiq bo'lmasa, ovoz chiqarish
-      if (!isChatOpen) {
-        playNotificationSound();
-      }
-
       setTicketsData((prev: Ticket[]) => {
         const findTicket = prev.find((t) => t.id === newTicket.ticket_id);
+
+        // Agar chat ochiq bo'lmasa, ovoz va bildirishnoma chiqarish
+        if (!isChatOpen && findTicket) {
+          playNotificationSound();
+
+          // Bildirishnoma chiqarish
+          showNotification(findTicket.user_name || "Yangi xabar", {
+            body: newTicket.last_message?.content || "Yangi xabar keldi",
+            tag: `ticket-${newTicket.ticket_id}`, // Bir xil ticket uchun eski bildirishnomani yangilash
+            requireInteraction: false,
+            silent: false,
+          });
+        }
 
         // ❌ YO'Q bo'lsa
         if (!findTicket) {
@@ -69,7 +78,7 @@ function ChatLeftTickets() {
     return () => {
       removeNotificationCallback();
     };
-  }, [ticketsResponse?.tickets, selectedUserId]);
+  }, [selectedUserId, queryClient]);
 
   return (
     <div className="custom-scrollbar overflow-y-auto h-full">
