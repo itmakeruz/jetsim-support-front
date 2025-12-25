@@ -18,7 +18,6 @@ export type Ticket = {
   color: string;
   last_message: {
     content: string;
-    message_id: number;
   };
   user_id: number;
   last_request_user: string;
@@ -27,6 +26,15 @@ export type Ticket = {
   status: string;
   request_close: boolean;
   is_online: boolean;
+};
+export type NotificationTicket = {
+  id: number;
+  ticket_id: number;
+  last_message: {
+    content: string;
+  };
+  push: number;
+  date: string;
 };
 
 export type TicketsResponse = {

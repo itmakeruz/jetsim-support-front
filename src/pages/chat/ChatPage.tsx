@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import { ChatTabs } from "./components/ChatTabs";
 import ChatHeader from "./components/ChatHeader";
@@ -12,7 +12,7 @@ import {
   setNotificationCallback,
   removeNotificationCallback,
 } from "@/lib/socket";
-import type { Ticket } from "@/types/chat";
+import type { NotificationTicket, Ticket } from "@/types/chat";
 
 function ChatPage() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -20,12 +20,17 @@ function ChatPage() {
   const [selectedUserId, setSelectedUserId] = useState<number | null>(
     userIdFromUrl ? Number(userIdFromUrl) : null
   );
-  const [updatedTickets, setUpdatedTickets] = useState<Ticket[]>([]);
+  const queryClient = useQueryClient();
+  const [ticketsData, setTicketsData] = useState<Ticket[]>([]);
   const isUpdatingFromUser = useRef(false);
 
   const { data: ticketsResponse, isLoading: isLoadingTickets } = useQuery({
     queryKey: ["tickets"],
-    queryFn: () => chatAPI.getTickets(),
+    queryFn: () =>
+      chatAPI.getTickets().then((res) => {
+        setTicketsData(res.tickets);
+        return res;
+      }),
   });
   const { data: singleTicketResponse, isLoading: isLoadingSingleTicket } =
     useQuery({
@@ -101,76 +106,35 @@ function ChatPage() {
 
   // Handle socket notifications - update chat list
   useEffect(() => {
-    const handleNotification = (newTicket: Ticket) => {
-      setUpdatedTickets((prevTickets) => {
-        const existingIndex = prevTickets.findIndex(
-          (t) => t.user_id === newTicket.user_id
-        );
+    const handleNotification = (newTicket: NotificationTicket) => {
+      setTicketsData((prev: Ticket[]) => {
+        const findTicket = prev.find((t) => t.id === newTicket.ticket_id);
 
-        if (existingIndex >= 0) {
-          // Update existing ticket (merge push count and last message, but keep original id)
-          const updated = [...prevTickets];
-          updated[existingIndex] = {
-            ...updated[existingIndex],
-            last_message: newTicket.last_message,
-            push: newTicket.push,
-            formatted_date: newTicket.formatted_date,
-            is_online: newTicket.is_online,
-            // Keep the original id from API ticket
-          };
-          return updated;
-        } else {
-          // Add new ticket to the beginning of the list
-          return [newTicket, ...prevTickets];
+        // ❌ YO‘Q bo‘lsa
+        if (!findTicket) {
+          queryClient.invalidateQueries({ queryKey: ["tickets"] });
+          return prev;
         }
+
+        const updatedTicket: Ticket = {
+          ...findTicket, // id va boshqa fieldlar saqlanadi
+          last_message: { content: newTicket.last_message.content },
+          formatted_date: newTicket.date,
+          push: (findTicket.push || 0) + 1,
+        };
+
+        // eski joyidan olib tashlab, tepaga qo‘yamiz
+        const rest = prev.filter((t) => t.id !== findTicket?.id);
+        return [updatedTicket, ...rest];
       });
     };
 
-    // Set the notification callback
     setNotificationCallback(handleNotification);
 
-    // Cleanup on unmount
     return () => {
       removeNotificationCallback();
     };
-  }, []);
-
-  // Merge API tickets with updated tickets from socket
-  const tickets = useMemo(() => {
-    const apiTickets = ticketsResponse?.tickets || [];
-
-    if (updatedTickets.length === 0) {
-      return apiTickets;
-    }
-
-    // Create a map of updated tickets by user_id
-    const updatedMap = new Map(
-      updatedTickets.map((ticket) => [ticket.user_id, ticket])
-    );
-
-    // Merge: use updated ticket if exists, otherwise use API ticket
-    const mergedTickets = apiTickets.map((apiTicket) => {
-      const updatedTicket = updatedMap.get(apiTicket.user_id);
-      if (updatedTicket) {
-        // Merge: keep API ticket's id and other fields, but update from socket
-        const merged: Ticket = {
-          ...apiTicket, // Keep all API ticket fields (including correct id)
-          last_message: updatedTicket.last_message,
-          push: updatedTicket.push,
-          formatted_date: updatedTicket.formatted_date,
-          is_online: updatedTicket.is_online,
-        };
-        // Remove from map so we know it's been merged
-        updatedMap.delete(apiTicket.user_id);
-        return merged;
-      }
-      return apiTicket;
-    });
-
-    // Add any new tickets that weren't in the API response
-    const newTickets = Array.from(updatedMap.values());
-    return [...newTickets, ...mergedTickets];
-  }, [ticketsResponse?.tickets, updatedTickets]);
+  }, [ticketsResponse?.tickets]);
 
   if (isLoadingTickets) {
     return <Loader isFullScreen={true} />;
@@ -180,10 +144,18 @@ function ChatPage() {
     <div className="h-full overflow-hidden bg-white">
       <div className="grid 2xl:grid-cols-[420px_1fr] xl:grid-cols-[380px_1fr] lg:grid-cols-[350px_1fr] h-full">
         <ChatTabs
-          tickets={tickets!}
+          tickets={ticketsData!}
           onUserSelect={(user: Ticket) => {
             isUpdatingFromUser.current = true;
             setSelectedUserId(user.id);
+            setTicketsData((prev: Ticket[]) => {
+              const index = prev.findIndex((t) => t.id === user.id);
+              if (index === -1) return prev;
+
+              return prev.map((ticket, i) =>
+                i === index ? { ...ticket, push: 0 } : ticket
+              );
+            });
           }}
           selectedUserId={selectedUserId}
         />

@@ -1,9 +1,9 @@
 import { io, Socket } from "socket.io-client";
 import { TOKEN_KEY } from "@/constants/staticDatas";
-import type { Ticket } from "@/types/chat";
+import type { NotificationTicket } from "@/types/chat";
 
 let socket: Socket | null = null;
-let notificationCallback: ((ticket: Ticket) => void) | null = null;
+let notificationCallback: ((ticket: NotificationTicket) => void) | null = null;
 
 export const initializeSocket = () => {
   if (socket?.connected) {
@@ -43,21 +43,14 @@ export const initializeSocket = () => {
     console.log(data);
 
     if (data && data.id) {
-      const ticket: Ticket = {
-        id: data.id,
-        user_name: data.name || "",
-        color: "", // Default color, can be updated from API
+      const ticket: NotificationTicket = {
+        id: data.ticket_id,
+        ticket_id: data.ticket_id,
         last_message: {
           content: data.last_message?.content || "",
-          message_id: 0, // Will be updated from API
         },
-        user_id: data.id,
-        last_request_user: data.name || "",
         push: data.push || 0,
-        formatted_date: data.date || "",
-        status: "active", // Default status
-        request_close: false,
-        is_online: data.is_online || false,
+        date: data.date || "",
       };
 
       // Call the callback if set
@@ -85,7 +78,9 @@ export const exitChat = (ticketId?: number | null) => {
   }
 };
 
-export const setNotificationCallback = (callback: (ticket: Ticket) => void) => {
+export const setNotificationCallback = (
+  callback: (ticket: NotificationTicket) => void
+) => {
   notificationCallback = callback;
 };
 

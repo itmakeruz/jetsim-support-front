@@ -17,10 +17,8 @@ const queryClient = new QueryClient({
 
 function App() {
   useEffect(() => {
-    // Initialize socket connection when app loads
     initializeSocket();
 
-    // Cleanup on unmount
     return () => {
       disconnectSocket();
     };

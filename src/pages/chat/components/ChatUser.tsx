@@ -28,25 +28,30 @@ function ChatUser({ ticket, isActive, onSelect }: ChatUserProps) {
         isActive ? "bg-[#F5F5F5]" : ""
       }`}
     >
-      <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-3">
-          <UserAvatar name={ticket?.user_name || ""} />
-          <div className="flex flex-col gap-1">
-            <div className="text-sm leading-none font-medium">
+      <div className="flex items-center justify-between gap-3">
+        <UserAvatar size="lg" name={ticket?.user_name || ""} />
+        <div className="flex flex-col justify-between w-full">
+          <div className="flex gap-1 justify-between h-[24px] items-center">
+            <div className="text-[15px] leading-none font-medium">
               {ticket.user_name}
             </div>
-            <div className="text-sm text-gray-500 leading-[1.3] font-normal line-clamp-1">
+            <span className="leading-none text-[13px] font-medium text-[#707991]">
+              {ticket.formatted_date}
+            </span>
+          </div>
+          <div className="flex gap-1 justify-between h-[24px] items-center">
+            <div
+              title={ticket.last_message.content}
+              className="text-sm text-[#707991] max-w-[180px] leading-[1.3] font-normal line-clamp-1"
+            >
               {ticket.last_message.content}
             </div>
+            {ticket.push > 0 && (
+              <span className="leading-none bg-[#78E378] text-white text-[14px] font-medium rounded-full min-w-5 aspect-square shrink-0 flex items-center justify-center">
+                {ticket.push > 9 ? "9+" : ticket.push}
+              </span>
+            )}
           </div>
-        </div>
-        <div className="flex flex-col gap-1 items-end">
-          <span className="leading-none text-xs">{ticket.formatted_date}</span>
-          {ticket.push > 0 && (
-            <span className="leading-none bg-[#78E378] p-1 text-white text-[10px] font-medium rounded-full min-w-4 aspect-square shrink-0 flex items-center justify-center">
-              {ticket.push}
-            </span>
-          )}
         </div>
       </div>
     </div>
