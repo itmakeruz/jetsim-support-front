@@ -60,6 +60,7 @@ export default function SimpleVideoPlayer({
           onPlay={handlePlay}
           onPause={handlePause}
           onEnded={handleEnded}
+          controls
           className="w-full h-auto object-cover"
           src={`${message.base_url}/${message.message.content}`}
         />
