@@ -15,7 +15,7 @@ export default function PhotoMessage({
   onImageLoad,
   onReply,
 }: PhotoMessageProps) {
-  const handleDoubleClick = (e: React.MouseEvent) => {
+  const handleDoubleClick = () => {
     if (onReply) {
       onReply(message);
     }
