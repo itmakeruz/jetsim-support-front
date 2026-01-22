@@ -43,7 +43,7 @@ export default function PhotoMessage({
         </button>
       )}
       <div
-        className="shrink-0 rounded-[12px] overflow-hidden cursor-pointer max-w-[350px]"
+        className="shrink-0 rounded-[12px] overflow-hidden cursor-pointer max-w-[250px]"
         onClick={handleImageClick}
       >
         <LazyImage
