@@ -44,12 +44,15 @@ function ChatUser({ ticket, setTicketsData }: ChatUserProps) {
           name={ticket?.user_name || ""}
           image={`${ticket?.base_url}/${ticket?.user_image || ""}`}
         />
-        <div className="flex flex-col justify-between w-full">
-          <div className="flex gap-1 justify-between h-[24px] items-center">
-            <div className="text-[15px] leading-none text-black font-medium">
+        <div className="flex flex-col justify-between w-full overflow-hidden">
+          <div className="flex gap-2 justify-between h-[24px] items-center">
+            <div
+              title={ticket.user_name}
+              className="text-[15px] leading-none text-black font-medium truncate text-ellipsis overflow-hidden"
+            >
               {ticket.user_name}
             </div>
-            <span className="leading-none text-[12px] font-medium text-[#707991]">
+            <span className="leading-none text-[12px] whitespace-nowrap font-medium text-[#707991]">
               {ticket.formatted_date}
             </span>
           </div>

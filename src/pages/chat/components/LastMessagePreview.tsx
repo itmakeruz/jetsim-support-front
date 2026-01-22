@@ -37,7 +37,12 @@ const LastMessagePreview: React.FC<LastMessagePreviewProps> = ({
 
     default:
       return (
-        <span className="truncate text-[13px] leading-none">{content}</span>
+        <span
+          title={content}
+          className="truncate text-[13px] text-ellipsis overflow-hidden leading-none"
+        >
+          {content}
+        </span>
       );
   }
 };
