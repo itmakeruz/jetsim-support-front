@@ -1,6 +1,7 @@
+import { useState } from "react";
 import type { Message } from "@/types/chat";
 import LazyImage from "@/components/LazyImage";
-import { Reply } from "lucide-react";
+import MessageContextMenu from "./MessageContextMenu";
 
 interface PhotoMessageProps {
   message: Message;
@@ -15,6 +16,16 @@ export default function PhotoMessage({
   onImageLoad,
   onReply,
 }: PhotoMessageProps) {
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
+
   const handleDoubleClick = () => {
     if (onReply) {
       onReply(message);
@@ -29,36 +40,40 @@ export default function PhotoMessage({
   };
 
   return (
-    <div
-      onDoubleClick={handleDoubleClick}
-      className="flex flex-col items-end relative group"
-    >
-      {onReply && (
-        <button
-          onClick={() => onReply(message)}
-          className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-full bg-white/90 hover:bg-white text-gray-700 z-10"
-          title="Reply"
-        >
-          <Reply className="w-3.5 h-3.5" />
-        </button>
-      )}
+    <>
       <div
-        className="shrink-0 rounded-[12px] relative flex border overflow-hidden cursor-pointer max-w-[300px]"
-        onClick={handleImageClick}
+        onContextMenu={handleContextMenu}
+        onDoubleClick={handleDoubleClick}
+        className="flex flex-col items-end relative group"
       >
-        <LazyImage
-          src={`${message.base_url}/${message.message.content}`}
-          alt="Photo"
-          className="w-full h-full object-cover"
-          effect="blur"
-          threshold={100}
-          onLoad={onImageLoad}
-        />
-        <div className="image-skeleton z-[-1]"></div>
+        <div
+          className="shrink-0 rounded-[12px] relative flex border overflow-hidden cursor-pointer max-w-[300px]"
+          onClick={handleImageClick}
+        >
+          <LazyImage
+            src={`${message.base_url}/${message.message.content}`}
+            alt="Photo"
+            className="w-full h-full object-cover"
+            effect="blur"
+            threshold={100}
+            onLoad={onImageLoad}
+          />
+          <div className="image-skeleton z-[-1]"></div>
+        </div>
+        <span className="text-[11px] group-hover:opacity-100 transition-opacity opacity-0 absolute bottom-1 right-2 bg-white border border-gray-200 drop-shadow-md px-2 py-1 rounded-full text-gray-400 leading-none">
+          {message.formatted_time?.slice(0, 5)}
+        </span>
       </div>
-      <span className="text-[11px] group-hover:opacity-100 transition-opacity opacity-0 absolute bottom-1 right-2 bg-white border border-gray-200 drop-shadow-md px-2 py-1 rounded-full text-gray-400 leading-none">
-        {message.formatted_time?.slice(0, 5)}
-      </span>
-    </div>
+
+      {contextMenu && (
+        <MessageContextMenu
+          message={message}
+          isMe={true}
+          position={contextMenu}
+          onClose={() => setContextMenu(null)}
+          onReply={onReply}
+        />
+      )}
+    </>
   );
 }

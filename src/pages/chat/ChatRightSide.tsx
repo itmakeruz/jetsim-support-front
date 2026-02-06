@@ -6,7 +6,12 @@ import ChatMessages from "./ChatRightComponents/ChatMessages";
 import ChatComposer from "./ChatRightComponents/ChatComposer";
 import { useState, useEffect, useCallback } from "react";
 import type { Message } from "@/types/chat";
-import { setNewMessageCallback, removeNewMessageCallback } from "@/lib/socket";
+import {
+  setNewMessageCallback,
+  removeNewMessageCallback,
+  editMessage as socketEditMessage,
+  deleteMessage as socketDeleteMessage,
+} from "@/lib/socket";
 import { showToast } from "@/utils/toastHelper";
 
 function ChatRightSide() {
@@ -89,6 +94,9 @@ function ChatRightSide() {
 
   // Edit submit handler
   const handleEditSubmit = useCallback((messageId: number, newContent: string) => {
+    // Socket orqali yuborish
+    socketEditMessage(messageId, newContent);
+    // Local state yangilash
     setMessages((prev) =>
       prev.map((msg) =>
         msg.id === messageId
@@ -97,10 +105,9 @@ function ChatRightSide() {
       )
     );
     showToast.success("Xabar tahrirlandi");
-    // TODO: API ulanganda bu yerda API chaqirish kerak
   }, []);
 
-  // Delete handler - xabarni o'chirish (hozircha frontend)
+  // Delete handler - xabarni o'chirish
   const handleDelete = useCallback((message: Message) => {
     setDeleteConfirm(message);
   }, []);
@@ -108,10 +115,12 @@ function ChatRightSide() {
   // Delete confirm
   const confirmDelete = useCallback(() => {
     if (deleteConfirm) {
+      // Socket orqali yuborish
+      socketDeleteMessage(deleteConfirm.id);
+      // Local state yangilash
       setMessages((prev) => prev.filter((msg) => msg.id !== deleteConfirm.id));
       showToast.success("Xabar o'chirildi");
       setDeleteConfirm(null);
-      // TODO: API ulanganda bu yerda API chaqirish kerak
     }
   }, [deleteConfirm]);
 

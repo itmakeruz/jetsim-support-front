@@ -1,6 +1,7 @@
+import { useState } from "react";
 import type { Message } from "@/types/chat";
-import { Reply, Copy, Pencil, Trash2 } from "lucide-react";
 import { showToast } from "@/utils/toastHelper";
+import MessageContextMenu from "./MessageContextMenu";
 
 interface TextMessageProps {
   message: Message;
@@ -17,87 +18,61 @@ export default function TextMessage({
   onEdit,
   onDelete,
 }: TextMessageProps) {
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY });
+  };
+
   const handleDoubleClick = () => {
     if (onReply) {
       onReply(message);
     }
   };
 
-  const handleCopy = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleCopy = () => {
     const textToCopy = message.message.content || "";
     navigator.clipboard.writeText(textToCopy).then(() => {
       showToast.success("Xabar nusxalandi");
     });
   };
 
-  const handleEdit = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onEdit) {
-      onEdit(message);
-    }
-  };
-
-  const handleDelete = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    if (onDelete) {
-      onDelete(message);
-    }
-  };
-
   return (
-    <div
-      onDoubleClick={handleDoubleClick}
-      className={`min-w-[200px] px-3 py-2 text-[13px] leading-[1.4] group relative cursor-pointer select-none
-      ${
-        isMe
-          ? "bg-[#f5f7fb] rounded-[12px_12px_0px_12px] text-gray-900"
-          : "bg-main-color rounded-[12px_12px_12px_0] text-white"
-      }`}
-    >
-      <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col gap-1.5 z-10">
-        {onReply && (
-          <button
-            onClick={() => onReply(message)}
-            className="p-2 rounded-full shadow-md transition-all hover:scale-110 bg-white hover:bg-gray-50 text-gray-700 shadow-gray-200"
-            title="Reply"
-          >
-            <Reply className="w-4 h-4" />
-          </button>
-        )}
-        <button
-          onClick={handleCopy}
-          className="p-2 rounded-full shadow-md transition-all hover:scale-110 bg-white hover:bg-gray-50 text-gray-700 shadow-gray-200"
-          title="Copy"
-        >
-          <Copy className="w-4 h-4" />
-        </button>
-        {/* Edit va Delete faqat o'z xabarlarimiz uchun */}
-        {isMe && onEdit && (
-          <button
-            onClick={handleEdit}
-            className="p-2 rounded-full shadow-md transition-all hover:scale-110 bg-white hover:bg-blue-50 text-blue-600 shadow-gray-200"
-            title="Edit"
-          >
-            <Pencil className="w-4 h-4" />
-          </button>
-        )}
-        {isMe && onDelete && (
-          <button
-            onClick={handleDelete}
-            className="p-2 rounded-full shadow-md transition-all hover:scale-110 bg-white hover:bg-red-50 text-red-500 shadow-gray-200"
-            title="Delete"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
-        )}
+    <>
+      <div
+        onContextMenu={handleContextMenu}
+        onDoubleClick={handleDoubleClick}
+        className={`min-w-[200px] px-3 py-2 text-[13px] leading-[1.4] relative cursor-pointer select-none
+        ${
+          isMe
+            ? "bg-[#f5f7fb] rounded-[12px_12px_0px_12px] text-gray-900"
+            : "bg-main-color rounded-[12px_12px_12px_0] text-white"
+        }`}
+      >
+        <p className="whitespace-pre-wrap wrap-break-word">
+          {message.message.content}
+        </p>
+        <span className="block mt-1 text-[11px] text-gray-400 text-right">
+          {message.formatted_time?.slice(0, 5)}
+        </span>
       </div>
-      <p className="whitespace-pre-wrap wrap-break-word">
-        {message.message.content}
-      </p>
-      <span className="block mt-1 text-[11px] text-gray-400 text-right">
-        {message.formatted_time?.slice(0, 5)}
-      </span>
-    </div>
+
+      {contextMenu && (
+        <MessageContextMenu
+          message={message}
+          isMe={isMe}
+          position={contextMenu}
+          onClose={() => setContextMenu(null)}
+          onReply={onReply}
+          onEdit={onEdit}
+          onDelete={onDelete}
+          onCopy={handleCopy}
+        />
+      )}
+    </>
   );
 }

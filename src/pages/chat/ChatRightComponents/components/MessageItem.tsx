@@ -104,7 +104,7 @@ export default function MessageItem({
         )}
 
         {message.content_type === "document" && (
-          <DocumentMessage message={message} isMe={isMe} />
+          <DocumentMessage message={message} isMe={isMe} onReply={onReply} />
         )}
       </div>
     </div>

@@ -139,3 +139,24 @@ export const setNewMessageCallback = (callback: (data: any) => void) => {
 export const removeNewMessageCallback = () => {
   newMessageCallback = null;
 };
+
+export const editMessage = (messageId: number, message: string) => {
+  if (socket?.connected) {
+    socket.emit("editmessage", {
+      message_id: messageId,
+      message: message,
+    });
+  } else {
+    console.error("Socket is not connected");
+  }
+};
+
+export const deleteMessage = (messageId: number) => {
+  if (socket?.connected) {
+    socket.emit("deletemessage", {
+      message_id: messageId,
+    });
+  } else {
+    console.error("Socket is not connected");
+  }
+};
