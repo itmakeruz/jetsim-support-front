@@ -43,7 +43,7 @@ export default function PhotoMessage({
         </button>
       )}
       <div
-        className="shrink-0 rounded-[12px] overflow-hidden cursor-pointer max-w-[250px]"
+        className="shrink-0 rounded-[12px] border overflow-hidden cursor-pointer max-w-[250px]"
         onClick={handleImageClick}
       >
         <LazyImage
@@ -55,7 +55,7 @@ export default function PhotoMessage({
           onLoad={onImageLoad}
         />
       </div>
-      <span className="mt-1 text-[11px] text-gray-400 text-right">
+      <span className="text-[11px] group-hover:opacity-100 transition-opacity opacity-0 absolute bottom-1 right-2 bg-white border border-gray-200 drop-shadow-md px-2 py-1 rounded-full text-gray-400 leading-none">
         {message.formatted_time?.slice(0, 5)}
       </span>
     </div>
