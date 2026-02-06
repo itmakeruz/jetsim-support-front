@@ -57,7 +57,10 @@ function ChatUser({ ticket, setTicketsData }: ChatUserProps) {
             </span>
           </div>
           <div className="flex gap-1 justify-between h-[24px] items-center">
-            <LastMessagePreview content={ticket.last_message.content} />
+            <LastMessagePreview
+              content={ticket.last_message.content}
+              contentType={ticket.last_message.content_type}
+            />
             {ticket.push > 0 && (
               <span className="leading-none bg-link-color text-white text-[12px] font-medium rounded-full min-w-5 aspect-square shrink-0 flex items-center justify-center">
                 {ticket.push > 9 ? "9+" : ticket.push}

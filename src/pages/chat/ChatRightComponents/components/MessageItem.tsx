@@ -5,6 +5,7 @@ import PhotoMessage from "./PhotoMessage";
 import TextMessage from "./TextMessage";
 import SimpleVideoPlayer from "./SimpleVideoPlayer";
 import ReplyMessage from "./ReplyMessage";
+import DocumentMessage from "./DocumentMessage";
 
 interface MessageItemProps {
   message: Message;
@@ -16,6 +17,8 @@ interface MessageItemProps {
   onImageClick: (message: Message) => void;
   onImageLoad?: () => void;
   onReply?: (message: Message) => void;
+  onEdit?: (message: Message) => void;
+  onDelete?: (message: Message) => void;
 }
 
 export default function MessageItem({
@@ -28,6 +31,8 @@ export default function MessageItem({
   onImageClick,
   onImageLoad,
   onReply,
+  onEdit,
+  onDelete,
 }: MessageItemProps) {
   return (
     <div
@@ -79,11 +84,27 @@ export default function MessageItem({
         )}
 
         {message.content_type === "text" && (
-          <TextMessage message={message} isMe={isMe} onReply={onReply} />
+          <TextMessage
+            message={message}
+            isMe={isMe}
+            onReply={onReply}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
         )}
 
         {message.content_type === "reply_text" && (
-          <ReplyMessage message={message} isMe={isMe} onReply={onReply} />
+          <ReplyMessage
+            message={message}
+            isMe={isMe}
+            onReply={onReply}
+            onEdit={onEdit}
+            onDelete={onDelete}
+          />
+        )}
+
+        {message.content_type === "document" && (
+          <DocumentMessage message={message} isMe={isMe} />
         )}
       </div>
     </div>

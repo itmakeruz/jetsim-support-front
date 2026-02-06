@@ -1,17 +1,21 @@
 import type { Message } from "@/types/chat";
-import { Reply, Copy } from "lucide-react";
+import { Reply, Copy, Pencil, Trash2 } from "lucide-react";
 import { showToast } from "@/utils/toastHelper";
 
 interface TextMessageProps {
   message: Message;
   isMe: boolean;
   onReply?: (message: Message) => void;
+  onEdit?: (message: Message) => void;
+  onDelete?: (message: Message) => void;
 }
 
 export default function TextMessage({
   message,
   isMe,
   onReply,
+  onEdit,
+  onDelete,
 }: TextMessageProps) {
   const handleDoubleClick = () => {
     if (onReply) {
@@ -25,6 +29,20 @@ export default function TextMessage({
     navigator.clipboard.writeText(textToCopy).then(() => {
       showToast.success("Xabar nusxalandi");
     });
+  };
+
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onEdit) {
+      onEdit(message);
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(message);
+    }
   };
 
   return (
@@ -41,11 +59,7 @@ export default function TextMessage({
         {onReply && (
           <button
             onClick={() => onReply(message)}
-            className={`p-2 rounded-full shadow-md transition-all hover:scale-110 ${
-              isMe
-                ? "bg-white hover:bg-gray-50 text-gray-700 shadow-gray-200"
-                : "bg-white hover:bg-gray-50 text-gray-700 shadow-gray-300"
-            }`}
+            className="p-2 rounded-full shadow-md transition-all hover:scale-110 bg-white hover:bg-gray-50 text-gray-700 shadow-gray-200"
             title="Reply"
           >
             <Reply className="w-4 h-4" />
@@ -53,15 +67,30 @@ export default function TextMessage({
         )}
         <button
           onClick={handleCopy}
-          className={`p-2 rounded-full shadow-md transition-all hover:scale-110 ${
-            isMe
-              ? "bg-white hover:bg-gray-50 text-gray-700 shadow-gray-200"
-              : "bg-white hover:bg-gray-50 text-gray-700 shadow-gray-300"
-          }`}
+          className="p-2 rounded-full shadow-md transition-all hover:scale-110 bg-white hover:bg-gray-50 text-gray-700 shadow-gray-200"
           title="Copy"
         >
           <Copy className="w-4 h-4" />
         </button>
+        {/* Edit va Delete faqat o'z xabarlarimiz uchun */}
+        {isMe && onEdit && (
+          <button
+            onClick={handleEdit}
+            className="p-2 rounded-full shadow-md transition-all hover:scale-110 bg-white hover:bg-blue-50 text-blue-600 shadow-gray-200"
+            title="Edit"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+        )}
+        {isMe && onDelete && (
+          <button
+            onClick={handleDelete}
+            className="p-2 rounded-full shadow-md transition-all hover:scale-110 bg-white hover:bg-red-50 text-red-500 shadow-gray-200"
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
+        )}
       </div>
       <p className="whitespace-pre-wrap wrap-break-word">
         {message.message.content}

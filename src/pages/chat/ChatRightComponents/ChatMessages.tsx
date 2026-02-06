@@ -10,9 +10,17 @@ interface ChatMessagesProps {
   user: Ticket;
   messages: Message[];
   onReply?: (message: Message) => void;
+  onEdit?: (message: Message) => void;
+  onDelete?: (message: Message) => void;
 }
 
-function ChatMessages({ messages, user, onReply }: ChatMessagesProps) {
+function ChatMessages({
+  messages,
+  user,
+  onReply,
+  onEdit,
+  onDelete,
+}: ChatMessagesProps) {
   const grouped = groupMessages(messages);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const [playingVideoId, setPlayingVideoId] = useState<number | null>(null);
@@ -125,6 +133,8 @@ function ChatMessages({ messages, user, onReply }: ChatMessagesProps) {
                   onImageClick={handleImageClick}
                   onImageLoad={handleImageLoad}
                   onReply={onReply}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
                 />
               );
             })}

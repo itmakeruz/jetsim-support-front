@@ -96,7 +96,10 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
         // Agar chat ochiq bo'lsa, push 0, aks holda push oshiriladi
         const updatedTicket: Ticket = {
           ...findTicket, // id va boshqa fieldlar saqlanadi
-          last_message: { content: newTicket.last_message.content },
+          last_message: {
+            content: newTicket.last_message.content,
+            content_type: newTicket.last_message.content_type,
+          },
           formatted_date: newTicket.date,
           push: isChatOpen ? 0 : (findTicket.push || 0) + 1,
         };
@@ -179,6 +182,7 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
                 data.content ||
                 findTicket.last_message?.content ||
                 "",
+              content_type: data.content_type || findTicket.last_message?.content_type,
             },
             push: isChatOpen ? 0 : (findTicket.push || 0) + 1,
           };

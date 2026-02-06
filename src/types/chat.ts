@@ -23,6 +23,7 @@ export type Ticket = {
   color: string;
   last_message: {
     content: string;
+    content_type?: string;
   };
   base_url: string;
   user_id: number;
@@ -39,6 +40,7 @@ export type NotificationTicket = {
   ticket_id: number;
   last_message: {
     content: string;
+    content_type?: string;
   };
   push: number;
   date: string;
