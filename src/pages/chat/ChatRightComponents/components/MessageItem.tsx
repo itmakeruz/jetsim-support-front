@@ -14,7 +14,7 @@ interface MessageItemProps {
   onVideoPlay: (messageId: number) => void;
   onVideoPause: (messageId: number) => void;
   onImageClick: (message: Message) => void;
-  onImageLoad: () => void;
+  onImageLoad?: () => void;
   onReply?: (message: Message) => void;
 }
 

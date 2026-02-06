@@ -1,9 +1,10 @@
 import type { Message, Ticket } from "@/types/chat";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import DateLabel from "./components/DateLabel";
 import MessageItem from "./components/MessageItem";
 import ImageLightbox from "./components/ImageLightbox";
 import { groupMessages } from "./utils/messageUtils";
+import { useScrollAnchor } from "@/hooks/useScrollAnchor";
 
 interface ChatMessagesProps {
   user: Ticket;
@@ -13,48 +14,65 @@ interface ChatMessagesProps {
 
 function ChatMessages({ messages, user, onReply }: ChatMessagesProps) {
   const grouped = groupMessages(messages);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
   const videoRefs = useRef<Map<number, HTMLVideoElement>>(new Map());
   const [playingVideoId, setPlayingVideoId] = useState<number | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const lastUserIdRef = useRef<number | null>(null);
 
-  const scrollToBottom = (instant = false) => {
-    if (containerRef.current) {
-      // scrollTop orqali to'g'ridan-to'g'ri pastga scroll qilish
-      containerRef.current.scrollTop = containerRef.current.scrollHeight;
-    } else if (bottomRef.current) {
-      // Fallback: scrollIntoView
-      bottomRef.current.scrollIntoView({
-        behavior: instant ? "auto" : "smooth",
-      });
-    }
-  };
+  const {
+    containerRef,
+    contentRef,
+    scrollToBottom,
+    preserveScrollPosition,
+    setIsAtBottom,
+  } = useScrollAnchor({ bottomThreshold: 100 });
+
+  // Rasm yuklanganda scroll position'ni saqlash
+  const handleImageLoad = useCallback(() => {
+    preserveScrollPosition();
+  }, [preserveScrollPosition]);
+
+  // Lightbox ochiq bo'lganda ESC bosilganda lightboxni yopish va event propagationni to'xtatish
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && lightboxOpen) {
+        e.preventDefault();
+        e.stopPropagation();
+        setLightboxOpen(false);
+      }
+    };
+
+    // Capture fazasida event'ni ushlab olish (parent componentlardan oldin)
+    document.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown, true);
+    };
+  }, [lightboxOpen]);
 
   // Yangi chatga kirganda to'g'ridan-to'g'ri pastga scroll qilish
   useEffect(() => {
     if (user.id !== lastUserIdRef.current) {
-      // Yangi chatga kirildi
+      // Yangi chatga kirildi - pastga scroll qilish va isAtBottom = true qilish
       lastUserIdRef.current = user.id;
+      setIsAtBottom(true);
       if (messages.length > 0) {
-        // Kichik delay bilan to'g'ridan-to'g'ri pastga scroll qilish
         setTimeout(() => {
           scrollToBottom(true);
         }, 50);
       }
-    } else if (messages.length > 0) {
-      // Keyingi xabarlar kelganda smooth scroll
+    }
+  }, [user.id, messages.length, scrollToBottom, setIsAtBottom]);
+
+  // Yangi xabar kelganda (faqat pastda bo'lsa scroll qilish)
+  const prevMessagesLengthRef = useRef(messages.length);
+  useEffect(() => {
+    if (messages.length > prevMessagesLengthRef.current) {
+      // Yangi xabar keldi - faqat auto-scroll (hook o'zi hal qiladi)
       scrollToBottom(false);
     }
-  }, [messages, user.id]);
-
-  const handleImageLoad = () => {
-    setTimeout(() => {
-      scrollToBottom(false);
-    }, 100);
-  };
+    prevMessagesLengthRef.current = messages.length;
+  }, [messages.length, scrollToBottom]);
 
   const handleImageClick = (message: Message) => {
     const photoMessages = messages.filter(
@@ -87,32 +105,32 @@ function ChatMessages({ messages, user, onReply }: ChatMessagesProps) {
       ref={containerRef}
       className="flex-1 overflow-y-auto custom-scrollbar p-6 space-y-6"
     >
-      {grouped.map((group) => (
-        <div key={group.date} className="space-y-2">
-          <DateLabel label={group.label} />
+      <div ref={contentRef}>
+        {grouped.map((group) => (
+          <div key={group.date} className="space-y-2 mb-6">
+            <DateLabel label={group.label} />
 
-          {group.items.map((message) => {
-            const isMe = message.is_answer !== 0;
+            {group.items.map((message) => {
+              const isMe = message.is_answer !== 0;
 
-            return (
-              <MessageItem
-                key={message.id}
-                message={message}
-                isMe={isMe}
-                videoRefs={videoRefs}
-                playingVideoId={playingVideoId}
-                onVideoPlay={handleVideoPlay}
-                onVideoPause={handleVideoPause}
-                onImageClick={handleImageClick}
-                onImageLoad={handleImageLoad}
-                onReply={onReply}
-              />
-            );
-          })}
-        </div>
-      ))}
-
-      <div ref={bottomRef} />
+              return (
+                <MessageItem
+                  key={message.id}
+                  message={message}
+                  isMe={isMe}
+                  videoRefs={videoRefs}
+                  playingVideoId={playingVideoId}
+                  onVideoPlay={handleVideoPlay}
+                  onVideoPause={handleVideoPause}
+                  onImageClick={handleImageClick}
+                  onImageLoad={handleImageLoad}
+                  onReply={onReply}
+                />
+              );
+            })}
+          </div>
+        ))}
+      </div>
 
       <ImageLightbox
         open={lightboxOpen}

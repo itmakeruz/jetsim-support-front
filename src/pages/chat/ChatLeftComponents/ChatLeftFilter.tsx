@@ -1,13 +1,27 @@
 import { ReloadIcon } from "@/assets/icons";
 import ChatFilterDropdown from "./ChatFilterDropdown";
+import { useQueryClient, useIsFetching } from "@tanstack/react-query";
 
 function ChatLeftFilter() {
+  const queryClient = useQueryClient();
+  const isFetching = useIsFetching({ queryKey: ["tickets"] });
+
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["tickets"] });
+  };
+
   return (
     <div className="flex items-center justify-between px-[20px] py-[20px]">
       <h2 className="md:text-[20px] font-semibold text-title-color">Чаты</h2>
       <div className="flex items-center gap-3">
-        <button className="flex items-center gap-[6px] text-text-color hover:text-link-color duration-300 text-[12px] font-semibold">
-          <ReloadIcon />
+        <button
+          onClick={handleRefresh}
+          disabled={isFetching > 0}
+          className="flex items-center gap-[6px] text-text-color hover:text-link-color duration-300 text-[12px] font-semibold disabled:opacity-50"
+        >
+          <span className={isFetching > 0 ? "animate-spin" : ""}>
+            <ReloadIcon />
+          </span>
           <span>Обновить</span>
         </button>
         <ChatFilterDropdown />

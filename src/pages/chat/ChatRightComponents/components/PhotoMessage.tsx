@@ -5,7 +5,7 @@ import { Reply } from "lucide-react";
 interface PhotoMessageProps {
   message: Message;
   onImageClick: (message: Message) => void;
-  onImageLoad: () => void;
+  onImageLoad?: () => void;
   onReply?: (message: Message) => void;
 }
 
@@ -43,7 +43,7 @@ export default function PhotoMessage({
         </button>
       )}
       <div
-        className="shrink-0 rounded-[12px] border overflow-hidden cursor-pointer max-w-[250px]"
+        className="shrink-0 rounded-[12px] overflow-hidden cursor-pointer max-w-[300px]"
         onClick={handleImageClick}
       >
         <LazyImage

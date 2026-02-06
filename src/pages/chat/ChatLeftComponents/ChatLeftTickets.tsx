@@ -2,7 +2,7 @@ import { chatAPI } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ChatUser from "../components/ChatUser";
 import ChatUserSkeleton from "../components/ChatUserSkeleton";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import type { NotificationTicket, Ticket } from "@/types/chat";
 import { useSearchParams } from "react-router-dom";
 import {
@@ -15,7 +15,11 @@ import { playNotificationSound } from "@/utils/playNotificationSound";
 import { showNotification } from "@/utils/notification";
 import { requestPageAttention } from "@/utils/pageAttention";
 
-function ChatLeftTickets() {
+interface ChatLeftTicketsProps {
+  searchQuery: string;
+}
+
+function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const selectedUserId = searchParams.get("userId");
@@ -201,13 +205,26 @@ function ChatLeftTickets() {
     };
   }, [selectedUserId, queryClient]);
 
+  // Search bo'yicha filter qilish
+  const filteredTickets = useMemo(() => {
+    if (!searchQuery.trim()) {
+      return ticketsData;
+    }
+    const query = searchQuery.toLowerCase().trim();
+    return ticketsData.filter((ticket) => {
+      const userName = ticket.user_name?.toLowerCase() || "";
+      const lastMessage = ticket.last_message?.content?.toLowerCase() || "";
+      return userName.includes(query) || lastMessage.includes(query);
+    });
+  }, [ticketsData, searchQuery]);
+
   return (
     <div className="custom-scrollbar overflow-y-auto h-full">
       {isLoadingTickets
         ? Array.from({ length: 6 }).map((_, index) => (
             <ChatUserSkeleton key={index} />
           ))
-        : ticketsData.map((ticket) => {
+        : filteredTickets.map((ticket) => {
             return (
               <ChatUser
                 setTicketsData={setTicketsData}
