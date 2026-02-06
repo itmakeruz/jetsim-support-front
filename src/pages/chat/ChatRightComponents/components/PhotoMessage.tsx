@@ -43,17 +43,18 @@ export default function PhotoMessage({
         </button>
       )}
       <div
-        className="shrink-0 rounded-[12px] overflow-hidden cursor-pointer max-w-[300px]"
+        className="shrink-0 rounded-[12px] relative flex border overflow-hidden cursor-pointer max-w-[300px]"
         onClick={handleImageClick}
       >
         <LazyImage
           src={`${message.base_url}/${message.message.content}`}
           alt="Photo"
-          className="w-full h-auto object-cover"
+          className="w-full h-full object-cover"
           effect="blur"
           threshold={100}
           onLoad={onImageLoad}
         />
+        <div className="image-skeleton z-[-1]"></div>
       </div>
       <span className="text-[11px] group-hover:opacity-100 transition-opacity opacity-0 absolute bottom-1 right-2 bg-white border border-gray-200 drop-shadow-md px-2 py-1 rounded-full text-gray-400 leading-none">
         {message.formatted_time?.slice(0, 5)}
