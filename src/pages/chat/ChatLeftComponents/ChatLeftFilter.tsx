@@ -12,12 +12,12 @@ function ChatLeftFilter() {
 
   return (
     <div className="flex items-center justify-between px-[20px] py-[20px]">
-      <h2 className="md:text-[20px] font-semibold text-title-color">Чаты</h2>
+      <h2 className="md:text-[20px] font-semibold text-foreground">Чаты</h2>
       <div className="flex items-center gap-3">
         <button
           onClick={handleRefresh}
           disabled={isFetching > 0}
-          className="flex items-center gap-[6px] text-text-color hover:text-link-color duration-300 text-[12px] font-semibold disabled:opacity-50"
+          className="flex items-center gap-[6px] text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 duration-300 text-[12px] font-semibold disabled:opacity-50"
         >
           <span className={isFetching > 0 ? "animate-spin" : ""}>
             <ReloadIcon />

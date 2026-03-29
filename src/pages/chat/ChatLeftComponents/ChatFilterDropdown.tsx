@@ -6,6 +6,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { FilterIcon } from "@/assets/icons";
+import { cn } from "@/lib/utils";
 
 import { filterOptions } from "@/constants/filterOptions";
 import type { FilterType } from "@/types/chat";
@@ -25,14 +26,22 @@ function ChatFilterDropdown({ onFilterChange }: ChatFilterDropdownProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger className="ring-0 outline-none select-none" asChild>
-        <button className="flex items-center gap-[6px] text-text-color hover:text-link-color duration-300 text-[12px] font-semibold">
+        <button
+          type="button"
+          className={cn(
+            "flex items-center gap-[6px] rounded-md px-1.5 py-1 -mx-1 -my-0.5",
+            "text-muted-foreground hover:text-blue-600 hover:bg-muted/70",
+            "dark:hover:text-blue-400 dark:hover:bg-white/5",
+            "duration-300 text-[12px] font-semibold"
+          )}
+        >
           <FilterIcon />
           <span>Фильтр</span>
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="end"
-        className="w-56 bg-white rounded-lg space-y-1 shadow-lg border overflow-hidden"
+        className="w-56 rounded-lg border-border p-1 shadow-lg"
       >
         {filterOptions.map((option) => {
           const Icon = option.icon;
@@ -41,14 +50,17 @@ function ChatFilterDropdown({ onFilterChange }: ChatFilterDropdownProps) {
             <DropdownMenuItem
               key={option.value}
               onClick={() => handleFilterSelect(option.value)}
-              className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer transition-colors ${
+              className={cn(
+                "flex cursor-pointer items-center gap-3 px-3 py-2.5 text-sm transition-colors",
                 isActive
-                  ? "text-link-color bg-link-bg"
-                  : "text-inactive-link-color hover:bg-link-bg! hover:text-link-color!"
-              }`}
+                  ? "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 data-[highlighted]:bg-blue-100 data-[highlighted]:text-blue-600 dark:data-[highlighted]:bg-blue-500/30 dark:data-[highlighted]:text-blue-400 [&_svg]:text-blue-600 dark:[&_svg]:text-blue-400"
+                  : "text-foreground"
+              )}
             >
-              <Icon />
-              <span className="text-sm">{option.label}</span>
+              <span className="flex size-4 shrink-0 items-center justify-center [&_svg]:size-4">
+                <Icon />
+              </span>
+              <span>{option.label}</span>
             </DropdownMenuItem>
           );
         })}
