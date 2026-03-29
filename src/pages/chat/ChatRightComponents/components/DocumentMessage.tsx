@@ -62,14 +62,16 @@ export default function DocumentMessage({
         onContextMenu={handleContextMenu}
         className={`min-w-[250px] max-w-[300px] px-3 py-3 rounded-xl cursor-pointer transition-all hover:opacity-90 group
         ${
-          isMe ? "bg-[#f5f7fb] rounded-br-none" : "bg-main-color rounded-bl-none"
+          isMe
+            ? "bg-[#f5f7fb] dark:bg-muted rounded-br-none"
+            : "bg-main-color rounded-bl-none"
         }`}
       >
         <div className="flex items-center gap-3">
           {/* File icon */}
           <div
             className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${
-              isMe ? "bg-white" : "bg-white/20"
+              isMe ? "bg-white dark:bg-card" : "bg-white/20"
             }`}
           >
             <FileText className={`w-5 h-5 ${isMe ? fileColor : "text-white"}`} />
@@ -79,12 +81,16 @@ export default function DocumentMessage({
           <div className="flex-1 min-w-0">
             <p
               className={`text-sm font-medium truncate ${
-                isMe ? "text-gray-900" : "text-white"
+                isMe ? "text-gray-900 dark:text-foreground" : "text-white"
               }`}
             >
               {fileName}
             </p>
-            <p className={`text-xs ${isMe ? "text-gray-500" : "text-white/70"}`}>
+            <p
+              className={`text-xs ${
+                isMe ? "text-gray-500 dark:text-muted-foreground" : "text-white/70"
+              }`}
+            >
               Документ
             </p>
           </div>
@@ -92,11 +98,13 @@ export default function DocumentMessage({
           {/* Download icon */}
           <div
             className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity ${
-              isMe ? "bg-gray-100" : "bg-white/20"
+              isMe ? "bg-gray-100 dark:bg-muted" : "bg-white/20"
             }`}
           >
             <Download
-              className={`w-4 h-4 ${isMe ? "text-gray-600" : "text-white"}`}
+              className={`w-4 h-4 ${
+                isMe ? "text-gray-600 dark:text-muted-foreground" : "text-white"
+              }`}
             />
           </div>
         </div>
@@ -104,7 +112,9 @@ export default function DocumentMessage({
         {/* Time */}
         <div className="flex justify-end mt-2">
           <span
-            className={`text-[11px] ${isMe ? "text-gray-400" : "text-white/70"}`}
+            className={`text-[11px] ${
+              isMe ? "text-gray-400 dark:text-muted-foreground" : "text-white/70"
+            }`}
           >
             {message.formatted_time?.slice(0, 5)}
           </span>

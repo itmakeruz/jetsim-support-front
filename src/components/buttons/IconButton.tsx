@@ -21,8 +21,11 @@ function IconButton({
       onClick={onClick}
       aria-label={ariaLabel}
       className={cn(
-        "bg-inactive-link-bg hover:text-link-color hover:bg-link-bg transition-all duration-300 text-title-color w-[40px] h-[40px] rounded flex items-center justify-center",
-        isActive && "bg-link-bg text-link-color",
+        "transition-all duration-300 size-10 rounded flex items-center justify-center shrink-0",
+        "text-slate-700 bg-slate-200 hover:bg-blue-100 hover:text-blue-600",
+        "dark:text-muted-foreground dark:bg-white/5 dark:hover:bg-blue-500/15 dark:hover:text-blue-400",
+        isActive &&
+          "bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/25",
         className
       )}
     >

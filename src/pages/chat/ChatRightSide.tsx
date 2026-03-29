@@ -13,6 +13,7 @@ import {
   deleteMessage as socketDeleteMessage,
 } from "@/lib/socket";
 import { showToast } from "@/utils/toastHelper";
+import { cn } from "@/lib/utils";
 
 function ChatRightSide() {
   const [isOpen, setIsOpen] = useState(false);
@@ -125,11 +126,12 @@ function ChatRightSide() {
   }, [deleteConfirm]);
 
   return (
-    <div className="flex overflow-hidden h-full bg-[#F5F7FB] bg-image-chat relative">
+    <div className="flex overflow-hidden h-full bg-image-chat relative text-foreground">
       <div
-        className={`w-full h-full flex flex-col transition-all duration-300 ${
+        className={cn(
+          "w-full h-full flex flex-col transition-all duration-300",
           isOpen ? "pr-[320px]" : "pr-0"
-        }`}
+        )}
       >
         {singleTicketResponse && !isLoadingSingleTicket ? (
           <>
@@ -159,40 +161,39 @@ function ChatRightSide() {
             />
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500">
+          <div className="flex-1 flex items-center justify-center text-muted-foreground text-center px-4">
             Выберите пользователя чтобы увидеть переписку
           </div>
         )}
       </div>
       <div
-        className={`w-[320px] bg-red-500 absolute right-0 transition-all duration-300 top-0 bottom-0 ${
+        className={cn(
+          "w-[320px] absolute right-0 transition-all duration-300 top-0 bottom-0 border-l border-border bg-card text-card-foreground shadow-lg",
           isOpen ? "translate-x-0" : "translate-x-full"
-        }`}
-      ></div>
+        )}
+      />
 
       {/* Delete confirmation modal */}
       {deleteConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">
-              Xabarni o'chirish
-            </h3>
-            <p className="text-gray-600 mb-4">
+          <div className="bg-popover text-popover-foreground rounded-lg p-6 max-w-sm w-full mx-4 shadow-xl border border-border">
+            <h3 className="text-lg font-semibold mb-2">Xabarni o'chirish</h3>
+            <p className="text-muted-foreground mb-4">
               Bu xabarni o'chirishni xohlaysizmi? Bu amalni qaytarib bo'lmaydi.
             </p>
-            <p className="text-sm text-gray-500 bg-gray-100 p-2 rounded mb-4 line-clamp-2">
+            <p className="text-sm text-muted-foreground bg-muted p-2 rounded mb-4 line-clamp-2">
               "{deleteConfirm.message.content}"
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-foreground bg-muted hover:bg-accent rounded-lg transition-colors"
               >
                 Bekor qilish
               </button>
               <button
                 onClick={confirmDelete}
-                className="px-4 py-2 text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+                className="px-4 py-2 text-white bg-red-500 hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700 rounded-lg transition-colors"
               >
                 O'chirish
               </button>

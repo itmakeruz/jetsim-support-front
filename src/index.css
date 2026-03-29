@@ -179,7 +179,14 @@ input::placeholder {
   color: inherit;
 }
 .bg-image-chat {
-  background: url("https://doot-light.react.themesbrand.com/static/media/pattern-05.ffd181cdf9a08b200998.png");
+  background-color: #f5f7fb;
+  background-image: url("https://doot-light.react.themesbrand.com/static/media/pattern-05.ffd181cdf9a08b200998.png");
+  background-repeat: repeat;
+}
+
+.dark .bg-image-chat {
+  background-color: var(--background);
+  background-image: none;
 }
 .chat-bubble-other::before {
   bottom: -10px;
@@ -202,6 +209,11 @@ input::placeholder {
   border-left: 5px solid transparent;
   border-bottom: 5px solid transparent;
 }
+
+.dark .chat-bubble-me::before {
+  border-top-color: oklch(0.269 0 0);
+  border-right-color: oklch(0.269 0 0);
+}
 select,
 input,
 textarea {
@@ -216,6 +228,16 @@ textarea {
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
   border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.dark .glass-effect {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+}
+
+.dark .image-skeleton {
+  background: oklch(0.269 0 0);
 }
 svg {
   color: inherit;

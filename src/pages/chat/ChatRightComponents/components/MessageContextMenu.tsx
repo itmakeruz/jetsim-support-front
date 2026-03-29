@@ -72,7 +72,7 @@ export default function MessageContextMenu({
   return (
     <div
       ref={menuRef}
-      className="fixed bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50 min-w-[160px] animate-in fade-in zoom-in-95 duration-100"
+      className="fixed bg-popover text-popover-foreground rounded-lg shadow-xl border border-border py-2 z-50 min-w-[160px] animate-in fade-in zoom-in-95 duration-100"
       style={{
         left: adjustedPosition.x,
         top: adjustedPosition.y,
@@ -84,7 +84,7 @@ export default function MessageContextMenu({
             onReply(message);
             onClose();
           }}
-          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors"
+          className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent flex items-center gap-3 transition-colors"
         >
           <Reply className="w-4 h-4" />
           <span>Ответить</span>
@@ -97,7 +97,7 @@ export default function MessageContextMenu({
             onCopy();
             onClose();
           }}
-          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-3 transition-colors"
+          className="w-full px-4 py-2 text-left text-sm text-foreground hover:bg-accent flex items-center gap-3 transition-colors"
         >
           <Copy className="w-4 h-4" />
           <span>Копировать</span>
@@ -106,13 +106,13 @@ export default function MessageContextMenu({
 
       {isMe && onEdit && (
         <>
-          <div className="h-px bg-gray-200 my-1" />
+          <div className="h-px bg-border my-1" />
           <button
             onClick={() => {
               onEdit(message);
               onClose();
             }}
-            className="w-full px-4 py-2 text-left text-sm text-blue-600 hover:bg-blue-50 flex items-center gap-3 transition-colors"
+            className="w-full px-4 py-2 text-left text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-500/15 flex items-center gap-3 transition-colors"
           >
             <Pencil className="w-4 h-4" />
             <span>Редактировать</span>
@@ -126,7 +126,7 @@ export default function MessageContextMenu({
             onDelete(message);
             onClose();
           }}
-          className="w-full px-4 py-2 text-left text-sm text-red-500 hover:bg-red-50 flex items-center gap-3 transition-colors"
+          className="w-full px-4 py-2 text-left text-sm text-destructive hover:bg-destructive/10 dark:hover:bg-destructive/20 flex items-center gap-3 transition-colors"
         >
           <Trash2 className="w-4 h-4" />
           <span>Удалить</span>

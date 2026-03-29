@@ -15,7 +15,7 @@ const LastMessagePreview: React.FC<LastMessagePreviewProps> = ({
   switch (contentType || content) {
     case "photo":
       return (
-        <div className="flex items-center text-[13px] gap-[4px] text-text-color">
+        <div className="flex items-center text-[13px] gap-[4px] text-muted-foreground">
           <PhotoIcon className="w-3" />
           <span className="leading-none">Фото</span>
         </div>
@@ -24,7 +24,7 @@ const LastMessagePreview: React.FC<LastMessagePreviewProps> = ({
     case "video":
     case "telegram_video":
       return (
-        <div className="flex items-center text-[13px] gap-[4px] text-text-color">
+        <div className="flex items-center text-[13px] gap-[4px] text-muted-foreground">
           <VideoIcon className="w-3" />
           <span className="leading-none">Видео</span>
         </div>
@@ -32,7 +32,7 @@ const LastMessagePreview: React.FC<LastMessagePreviewProps> = ({
 
     case "document":
       return (
-        <div className="flex items-center text-[13px] gap-[4px] text-text-color">
+        <div className="flex items-center text-[13px] gap-[4px] text-muted-foreground">
           <FileText className="w-3 h-3" />
           <span className="leading-none">Документ</span>
         </div>
@@ -40,7 +40,7 @@ const LastMessagePreview: React.FC<LastMessagePreviewProps> = ({
 
     case "voice":
       return (
-        <div className="flex items-center text-[13px] gap-[4px] text-text-color">
+        <div className="flex items-center text-[13px] gap-[4px] text-muted-foreground">
           <Mic className="w-3 h-3" />
           <span className="leading-none">Голосовое сообщение</span>
         </div>
@@ -52,7 +52,7 @@ const LastMessagePreview: React.FC<LastMessagePreviewProps> = ({
       return (
         <span
           title={content}
-          className="truncate text-[13px] text-ellipsis overflow-hidden leading-none text-text-color"
+          className="truncate text-[13px] text-ellipsis overflow-hidden leading-none text-muted-foreground"
         >
           {content}
         </span>

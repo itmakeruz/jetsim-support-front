@@ -47,7 +47,7 @@ export default function PhotoMessage({
         className="flex flex-col items-end relative group"
       >
         <div
-          className="shrink-0 rounded-[12px] relative flex border overflow-hidden cursor-pointer max-w-[300px]"
+          className="shrink-0 rounded-[12px] relative flex border border-border overflow-hidden cursor-pointer max-w-[300px]"
           onClick={handleImageClick}
         >
           <LazyImage
@@ -60,7 +60,7 @@ export default function PhotoMessage({
           />
           <div className="image-skeleton z-[-1]"></div>
         </div>
-        <span className="text-[11px] group-hover:opacity-100 transition-opacity opacity-0 absolute bottom-1 right-2 bg-white border border-gray-200 drop-shadow-md px-2 py-1 rounded-full text-gray-400 leading-none">
+        <span className="text-[11px] group-hover:opacity-100 transition-opacity opacity-0 absolute bottom-1 right-2 bg-popover border border-border drop-shadow-md px-2 py-1 rounded-full text-muted-foreground leading-none">
           {message.formatted_time?.slice(0, 5)}
         </span>
       </div>

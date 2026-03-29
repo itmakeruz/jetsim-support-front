@@ -65,7 +65,7 @@ export default function SimpleVideoPlayer({
           src={`${message.base_url}/${message.message.content}`}
         />
       </div>
-      <span className="mt-1 text-[11px] text-gray-400 text-right">
+      <span className="mt-1 text-[11px] text-muted-foreground text-right">
         {message.formatted_time?.slice(0, 5)}
       </span>
     </div>

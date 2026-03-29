@@ -64,7 +64,7 @@ function VideoPlayer({
           src={src}
         />
       </div>
-      <span className="mt-1 text-[12px] glass-effect px-1 py-0.5 rounded-full absolute bottom-0 right-2 text-gray-500">
+      <span className="mt-1 text-[12px] glass-effect px-1 py-0.5 rounded-full absolute bottom-0 right-2 text-muted-foreground">
         {formattedTime?.slice(0, 5)}
       </span>
     </div>

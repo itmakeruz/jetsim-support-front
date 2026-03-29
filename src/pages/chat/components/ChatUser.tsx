@@ -2,6 +2,7 @@ import type { Ticket } from "@/types/chat";
 import type { KeyboardEvent } from "react";
 import UserAvatar from "@/components/UserAvatar";
 import { useSearchParams } from "react-router-dom";
+import { cn } from "@/lib/utils";
 import LastMessagePreview from "./LastMessagePreview";
 
 interface ChatUserProps {
@@ -26,17 +27,20 @@ function ChatUser({ ticket, setTicketsData }: ChatUserProps) {
     }
   };
 
+  const isSelected = userIdFromUrl == ticket.id.toString();
+
   return (
     <div
-      key={ticket.id}
       role="button"
       tabIndex={0}
-      aria-pressed={userIdFromUrl == ticket.id.toString()}
+      aria-pressed={isSelected}
       onClick={() => onUserSelect(ticket)}
       onKeyDown={handleKeyDown}
-      className={`px-[20px] py-[12px] hover:bg-ticket-active-bg cursor-pointer ${
-        userIdFromUrl == ticket.id.toString() ? "bg-ticket-active-bg" : ""
-      }`}
+      className={cn(
+        "px-[20px] py-[12px] cursor-pointer transition-colors",
+        "hover:bg-ticket-active-bg dark:hover:bg-white/6",
+        isSelected && "bg-ticket-active-bg dark:bg-white/9"
+      )}
     >
       <div className="flex items-center justify-between gap-3">
         <UserAvatar
@@ -48,11 +52,11 @@ function ChatUser({ ticket, setTicketsData }: ChatUserProps) {
           <div className="flex gap-2 justify-between h-[24px] items-center">
             <div
               title={ticket.user_name}
-              className="text-[15px] leading-none text-black font-medium truncate text-ellipsis overflow-hidden"
+              className="text-[15px] leading-none font-medium truncate text-ellipsis overflow-hidden text-foreground"
             >
               {ticket.user_name}
             </div>
-            <span className="leading-none text-[12px] whitespace-nowrap font-medium text-[#707991]">
+            <span className="leading-none text-[12px] whitespace-nowrap font-medium text-muted-foreground">
               {ticket.formatted_date}
             </span>
           </div>
@@ -62,7 +66,7 @@ function ChatUser({ ticket, setTicketsData }: ChatUserProps) {
               contentType={ticket.last_message.content_type}
             />
             {ticket.push > 0 && (
-              <span className="leading-none bg-link-color text-white text-[12px] font-medium rounded-full min-w-5 aspect-square shrink-0 flex items-center justify-center">
+              <span className="leading-none bg-blue-600 text-white dark:bg-blue-500 text-[12px] font-medium rounded-full min-w-5 aspect-square shrink-0 flex items-center justify-center">
                 {ticket.push > 9 ? "9+" : ticket.push}
               </span>
             )}

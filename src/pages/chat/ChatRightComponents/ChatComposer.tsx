@@ -238,49 +238,49 @@ function ChatComposer({
   };
 
   return (
-    <div className="bg-white border-t">
+    <div className="bg-card border-t border-border shrink-0">
       {/* Edit preview */}
       {editMessage && (
-        <div className="px-4 py-2 bg-blue-50 border-b flex items-center justify-between">
+        <div className="px-4 py-2 bg-blue-50 dark:bg-blue-500/15 border-b border-border flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-medium text-blue-600">
+              <span className="text-[11px] font-medium text-blue-600 dark:text-blue-400">
                 Редактирование:
               </span>
             </div>
-            <p className="text-[12px] text-gray-700 line-clamp-1">
+            <p className="text-[12px] text-foreground line-clamp-1">
               {editMessage.message.content}
             </p>
           </div>
           <button
             type="button"
             onClick={handleCancel}
-            className="ml-2 p-1 hover:bg-blue-100 rounded-full transition-colors"
+            className="ml-2 p-1 hover:bg-blue-100 dark:hover:bg-blue-500/25 rounded-full transition-colors"
           >
-            <X className="w-4 h-4 text-blue-500" />
+            <X className="w-4 h-4 text-blue-500 dark:text-blue-400" />
           </button>
         </div>
       )}
 
       {/* Reply preview */}
       {replyMessage && !editMessage && (
-        <div className="px-4 py-2 bg-gray-50 border-b flex items-center justify-between">
+        <div className="px-4 py-2 bg-muted/60 border-b border-border flex items-center justify-between">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-[11px] font-medium text-gray-600">
+              <span className="text-[11px] font-medium text-muted-foreground">
                 Reply to:
               </span>
             </div>
-            <p className="text-[12px] text-gray-700 line-clamp-1">
+            <p className="text-[12px] text-foreground line-clamp-1">
               {replyMessage.message.content}
             </p>
           </div>
           <button
             type="button"
             onClick={handleCancel}
-            className="ml-2 p-1 hover:bg-gray-200 rounded-full transition-colors"
+            className="ml-2 p-1 hover:bg-accent rounded-full transition-colors"
           >
-            <X className="w-4 h-4 text-gray-500" />
+            <X className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
       )}
@@ -291,7 +291,7 @@ function ChatComposer({
       >
         <button
           type="button"
-          className="text-gray-500 hover:text-main-color transition-colors"
+          className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
         >
           <Smile className="w-5 h-5" />
         </button>
@@ -299,7 +299,7 @@ function ChatComposer({
           type="button"
           onClick={handleImageClick}
           disabled={isUploading || !ticketId || !!editMessage}
-          className="text-gray-500 hover:text-main-color transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <ImageIcon className="w-5 h-5" />
         </button>
@@ -314,7 +314,7 @@ function ChatComposer({
           type="button"
           onClick={handleFileClick}
           disabled={isUploading || !ticketId || !!editMessage}
-          className="text-gray-500 hover:text-main-color transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className="text-muted-foreground hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Paperclip className="w-5 h-5" />
         </button>
@@ -332,7 +332,7 @@ function ChatComposer({
           onPaste={handlePaste}
           placeholder="Введите сообщение... (Shift+Enter для новой строки)"
           rows={1}
-          className="flex-1 bg-[#F5F7FB] text-title-color border border-gray-200 rounded px-3 py-2 outline-none transition-colors resize-none min-h-[40px] max-h-[150px] overflow-y-auto scrollbar-none"
+          className="flex-1 bg-muted/50 dark:bg-muted/40 text-foreground placeholder:text-muted-foreground border border-border rounded px-3 py-2 outline-none transition-colors resize-none min-h-[40px] max-h-[150px] overflow-y-auto scrollbar-none focus-visible:ring-2 focus-visible:ring-ring/50"
         />
         <button
           type="submit"
@@ -349,24 +349,22 @@ function ChatComposer({
       {/* Pasted image confirmation modal */}
       {pastedImage && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4 shadow-xl">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">
-              Rasmni yuborish
-            </h3>
-            <div className="mb-4 rounded-lg overflow-hidden border border-gray-200">
+          <div className="bg-popover text-popover-foreground rounded-lg p-6 max-w-md w-full mx-4 shadow-xl border border-border">
+            <h3 className="text-lg font-semibold mb-4">Rasmni yuborish</h3>
+            <div className="mb-4 rounded-lg overflow-hidden border border-border">
               <img
                 src={pastedImage.preview}
                 alt="Pasted preview"
-                className="w-full h-auto max-h-[300px] object-contain bg-gray-100"
+                className="w-full h-auto max-h-[300px] object-contain bg-muted"
               />
             </div>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-muted-foreground mb-4">
               Bu rasmni yuborishni xohlaysizmi?
             </p>
             <div className="flex gap-3 justify-end">
               <button
                 onClick={handlePastedImageCancel}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="px-4 py-2 text-foreground bg-muted hover:bg-accent rounded-lg transition-colors"
               >
                 Bekor qilish
               </button>

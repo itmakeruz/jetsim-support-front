@@ -37,7 +37,7 @@ function ChatHeader({ user, togglePanel, isOpen }: ChatHeaderProps) {
     document.dispatchEvent(event);
   };
   return (
-    <header className="flex items-center justify-between px-6 h-[70px] bg-white border-b">
+    <header className="flex items-center justify-between px-6 h-[70px] shrink-0 bg-card border-b border-border">
       <div className="flex items-center gap-3">
         <UserAvatar
           image={`${user.base_url}/${user.user_image}`}
@@ -45,10 +45,12 @@ function ChatHeader({ user, togglePanel, isOpen }: ChatHeaderProps) {
           name={user.name}
         />
         <div className="flex flex-col gap-1">
-          <span className="font-semibold text-xs md:text-sm">{user?.name}</span>
+          <span className="font-semibold text-xs md:text-sm text-foreground">
+            {user?.name}
+          </span>
         </div>
       </div>
-      <div className="flex items-center gap-4 text-gray-500">
+      <div className="flex items-center gap-2 sm:gap-3">
         <IconButton icon={<Pin className="w-5 h-5" />} ariaLabel="Pin" />
         <IconButton
           icon={<SearchIcon className="w-5 h-5" />}
