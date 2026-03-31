@@ -179,7 +179,6 @@ input::placeholder {
   color: inherit;
 }
 .bg-image-chat {
-  background-color: #f5f7fb;
   background-image: url("https://doot-light.react.themesbrand.com/static/media/pattern-05.ffd181cdf9a08b200998.png");
   background-repeat: repeat;
 }
