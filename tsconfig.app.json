@@ -23,11 +23,10 @@
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
     "noUncheckedSideEffectImports": true,
-     /* 🔥 Alias configuration */
-     "baseUrl": ".",
-     "paths": {
-       "@/*": ["src/*"]
-     }
+    /* 🔥 Alias configuration */
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src"]
 }

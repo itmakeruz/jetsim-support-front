@@ -1,10 +1,48 @@
 import { io, Socket } from "socket.io-client";
 import { TOKEN_KEY } from "@/constants/staticDatas";
 import type { NotificationTicket } from "@/types/chat";
+import { showToast } from "@/utils/toastHelper";
 
 let socket: Socket | null = null;
 let notificationCallback: ((ticket: NotificationTicket) => void) | null = null;
 let newMessageCallback: ((data: any) => void) | null = null;
+
+type SocketException = {
+  status?: number;
+  error?: string;
+  message?: string;
+};
+
+const getExceptionMessage = (payload: unknown): string => {
+  if (Array.isArray(payload)) {
+    const errorPayload = payload.find(
+      (item): item is SocketException =>
+        typeof item === "object" && item !== null && "message" in item
+    );
+
+    return (
+      errorPayload?.message ||
+      payload.find((item): item is string => typeof item === "string") ||
+      "Ошибка при отправке сообщения"
+    );
+  }
+
+  if (typeof payload === "object" && payload !== null) {
+    const exception = payload as SocketException;
+
+    return (
+      exception.message ||
+      exception.error ||
+      "Ошибка при отправке сообщения"
+    );
+  }
+
+  if (typeof payload === "string") {
+    return payload;
+  }
+
+  return "Ошибка при отправке сообщения";
+};
 
 export const initializeSocket = () => {
   if (socket?.connected) {
@@ -36,6 +74,11 @@ export const initializeSocket = () => {
 
   socket.on("connect_error", (error) => {
     console.error("Socket connection error:", error);
+  });
+
+  socket.on("exception", (data: unknown) => {
+    console.error("Socket exception:", data);
+    showToast.error(getExceptionMessage(data));
   });
 
   // Notification event listener
