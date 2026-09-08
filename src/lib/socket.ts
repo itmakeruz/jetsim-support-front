@@ -3,9 +3,32 @@ import { TOKEN_KEY } from "@/constants/staticDatas";
 import type { NotificationTicket } from "@/types/chat";
 import { showToast } from "@/utils/toastHelper";
 
+type SocketResult<T = unknown> = {
+  ok: boolean;
+  data?: T;
+  error?: { message?: string };
+};
+
+type Unsubscribe = () => void;
+
 let socket: Socket | null = null;
-let notificationCallback: ((ticket: NotificationTicket) => void) | null = null;
-let newMessageCallback: ((data: any) => void) | null = null;
+const notificationListeners = new Set<(ticket: NotificationTicket) => void>();
+const newMessageListeners = new Set<(data: unknown) => void>();
+const updateMessageListeners = new Set<(data: unknown) => void>();
+const removeMessageListeners = new Set<(data: unknown) => void>();
+const connectListeners = new Set<() => void>();
+
+const socketUrl =
+  import.meta.env.VITE_SOCKET_URL ||
+  import.meta.env.VITE_API_BASE_URL ||
+  "https://support-api.jetsim.ru";
+
+const subscribe = <T>(listeners: Set<(data: T) => void>, callback: (data: T) => void): Unsubscribe => {
+  listeners.add(callback);
+  return () => {
+    listeners.delete(callback);
+  };
+};
 
 type SocketException = {
   status?: number;
@@ -45,161 +68,85 @@ const getExceptionMessage = (payload: unknown): string => {
 };
 
 export const initializeSocket = () => {
-  if (socket?.connected) {
-    return socket;
-  }
+  if (socket) return socket;
 
-  const token = localStorage.getItem(TOKEN_KEY);
-  const headers: Record<string, string> = {
-    token: token || "",
-  };
-  socket = io("https://support-api.jetsim.ru", {
+  const token = localStorage.getItem(TOKEN_KEY) || "";
+  socket = io(socketUrl, {
+    auth: { token },
     reconnection: true,
     reconnectionDelay: 1000,
-    reconnectionAttempts: 5,
+    reconnectionAttempts: Infinity,
     transportOptions: {
-      polling: {
-        extraHeaders: headers,
-      },
+      polling: { extraHeaders: { token } },
     },
-  });
-
-  socket.on("connect", () => {
-    console.log("Socket connected:", socket?.id);
-  });
-
-  socket.on("disconnect", () => {
-    console.log("Socket disconnected");
-  });
-
-  socket.on("connect_error", (error) => {
-    console.error("Socket connection error:", error);
   });
 
   socket.on("exception", (data: unknown) => {
     console.error("Socket exception:", data);
     showToast.error(getExceptionMessage(data));
   });
-
-  // Notification event listener
-  socket.on("notification", (data: any) => {
-    // Convert notification data to Ticket format
-    console.log(data);
-
-    if (data && data.id) {
-      const ticket: NotificationTicket = {
-        id: data.ticket_id,
-        ticket_id: data.ticket_id,
-        last_message: {
-          content: data.last_message?.content || "",
-        },
-        push: data.push || 0,
-        date: data.date || "",
-      };
-
-      // Call the callback if set
-      if (notificationCallback) {
-        notificationCallback(ticket);
-      }
-    }
-  });
-
-  // NewMessage event listener
-  socket.on("newMessage", (data: any) => {
-    console.log("newMessage event received:", data);
-
-    // Call the callback if set
-    if (newMessageCallback) {
-      newMessageCallback(data);
-    }
-  });
+  socket.on("connect", () => connectListeners.forEach((callback) => callback()));
+  socket.on("notification", (data: NotificationTicket) => notificationListeners.forEach((callback) => callback(data)));
+  socket.on("newMessage", (data: unknown) => newMessageListeners.forEach((callback) => callback(data)));
+  socket.on("updatemessage", (data: unknown) => updateMessageListeners.forEach((callback) => callback(data)));
+  socket.on("removemessage", (data: unknown) => removeMessageListeners.forEach((callback) => callback(data)));
 
   return socket;
 };
 
 export const disconnectSocket = () => {
-  if (socket) {
-    socket.disconnect();
-    socket = null;
-  }
+  socket?.disconnect();
+  socket = null;
 };
 
 export const reconnectSocket = () => {
-  if (socket) {
-    socket.disconnect();
-    socket = null;
-  }
+  disconnectSocket();
   return initializeSocket();
 };
 
 export const getSocket = () => socket;
 
-export const exitChat = (ticketId?: number | null) => {
-  if (socket?.connected && ticketId) {
-    socket.emit("exitchat", { ticketId });
-  }
+export const subscribeNotification = (callback: (ticket: NotificationTicket) => void) =>
+  subscribe(notificationListeners, callback);
+export const subscribeNewMessage = (callback: (data: unknown) => void) => subscribe(newMessageListeners, callback);
+export const subscribeUpdatedMessage = (callback: (data: unknown) => void) => subscribe(updateMessageListeners, callback);
+export const subscribeRemovedMessage = (callback: (data: unknown) => void) => subscribe(removeMessageListeners, callback);
+export const subscribeSocketConnected = (callback: () => void) => {
+  connectListeners.add(callback);
+  return () => {
+    connectListeners.delete(callback);
+  };
 };
 
-export const setNotificationCallback = (
-  callback: (ticket: NotificationTicket) => void
-) => {
-  notificationCallback = callback;
-};
-
-export const removeNotificationCallback = () => {
-  notificationCallback = null;
-};
-
-export const sendMessage = (
-  ticketId: number,
-  message: string,
-  replyMessageId?: number
-) => {
-  if (socket?.connected) {
-    const payload: {
-      ticket_id: number;
-      message: string;
-      reply_message_id?: number;
-    } = {
-      ticket_id: Number(ticketId),
-      message: message,
-    };
-
-    if (replyMessageId) {
-      payload.reply_message_id = replyMessageId;
+const emitWithAck = <T>(event: string, payload: object): Promise<SocketResult<T>> =>
+  new Promise((resolve) => {
+    if (!socket?.connected) {
+      resolve({ ok: false, error: { message: "Socket is not connected" } });
+      return;
     }
 
-    socket.emit("sendMessage", payload);
-  } else {
-    console.error("Socket is not connected");
-  }
-};
+    const timeout = window.setTimeout(() => {
+      resolve({ ok: false, error: { message: "Server response timed out" } });
+    }, 10_000);
 
-export const setNewMessageCallback = (callback: (data: any) => void) => {
-  newMessageCallback = callback;
-};
-
-export const removeNewMessageCallback = () => {
-  newMessageCallback = null;
-};
-
-export const editMessage = (messageId: number, message: string) => {
-  if (socket?.connected) {
-    socket.emit("editmessage", {
-      message_id: messageId,
-      message: message,
+    socket.emit(event, payload, (response: SocketResult<T>) => {
+      window.clearTimeout(timeout);
+      resolve(response || { ok: false, error: { message: "Invalid server response" } });
     });
-  } else {
-    console.error("Socket is not connected");
-  }
-};
+  });
 
-export const deleteMessage = (messageId: number) => {
-  if (socket?.connected) {
-    socket.emit("deletemessage", {
-      message_id: messageId,
-    });
-  } else {
-    console.error("Socket is not connected");
-  }
-};
+export const exitChat = (ticketId?: number | null) =>
+  ticketId ? emitWithAck("exitchat", { ticket_id: ticketId }) : Promise.resolve({ ok: true });
+
+export const sendMessage = (ticketId: number, message: string, replyMessageId?: number) =>
+  emitWithAck("sendMessage", {
+    ticket_id: Number(ticketId),
+    message,
+    ...(replyMessageId ? { reply_message_id: replyMessageId } : {}),
+  });
+
+export const editMessage = (messageId: number, message: string) =>
+  emitWithAck("editmessage", { message_id: messageId, message });
+
+export const deleteMessage = (messageId: number) =>
+  emitWithAck("deletemessage", { message_id: messageId });

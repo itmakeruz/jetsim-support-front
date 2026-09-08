@@ -13,14 +13,16 @@ export const authAPI = {
 };
 
 export const chatAPI = {
-  getTickets: (size?: number, page?: number): Promise<TicketsResponse> => {
+  getTickets: (size?: number, page?: number, search?: string): Promise<TicketsResponse> => {
     const params: {
       size?: number;
       page?: number;
+      search?: string;
     } = {};
 
     params.size = size;
     params.page = page;
+    params.search = search;
 
     return axios
       .get<TicketsResponse>("/chat/operator/user/tickets", { params })
@@ -33,10 +35,18 @@ export const chatAPI = {
       .get<SingleTicketResponse>(`/chat/operator/ticket/${ticketId}/chats`)
       .then((res) => res.data);
   },
-  uploadFile: (ticketId: number, file: File): Promise<any> => {
+  uploadFile: (
+    ticketId: number,
+    file: File,
+    onProgress?: (percent: number) => void
+  ): Promise<unknown> => {
     const formData = new FormData();
     formData.append("ticket_id", ticketId.toString());
     formData.append("file", file);
-    return axios.post("/chat/client/upload", formData).then((res) => res.data);
+    return axios.post("/chat/client/upload", formData, {
+      onUploadProgress: (event) => {
+        if (event.total) onProgress?.(Math.round((event.loaded / event.total) * 100));
+      },
+    }).then((res) => res.data);
   },
 };

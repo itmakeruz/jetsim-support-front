@@ -1,5 +1,5 @@
 import { chatAPI } from "@/lib/api";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSearchParams } from "react-router-dom";
 import ChatHeader from "./ChatRightComponents/ChatHeader";
 import ChatMessages from "./ChatRightComponents/ChatMessages";
@@ -7,8 +7,10 @@ import ChatComposer from "./ChatRightComponents/ChatComposer";
 import { useState, useEffect, useCallback } from "react";
 import type { Message } from "@/types/chat";
 import {
-  setNewMessageCallback,
-  removeNewMessageCallback,
+  subscribeNewMessage,
+  subscribeRemovedMessage,
+  subscribeSocketConnected,
+  subscribeUpdatedMessage,
   editMessage as socketEditMessage,
   deleteMessage as socketDeleteMessage,
 } from "@/lib/socket";
@@ -16,6 +18,7 @@ import { showToast } from "@/utils/toastHelper";
 import { cn } from "@/lib/utils";
 
 function ChatRightSide() {
+  const queryClient = useQueryClient();
   const [isOpen, setIsOpen] = useState(false);
   const [searchParams] = useSearchParams();
   const userIdFromUrl = searchParams.get("userId");
@@ -37,31 +40,37 @@ function ChatRightSide() {
     }
   }, [singleTicketResponse]);
 
-  // newMessage event'ini listen qilish
+  useEffect(() => {
+    setMessages([]);
+    setReplyMessage(null);
+    setEditMessage(null);
+    setDeleteConfirm(null);
+  }, [userIdFromUrl]);
+
+  // Every real-time event must name its ticket. Never attach an unscoped event
+  // to whichever chat happens to be open while the operator is switching chats.
   useEffect(() => {
     if (!userIdFromUrl) return;
+    const ticketId = Number(userIdFromUrl);
 
-    const handleNewMessage = (data: any) => {
-      // Agar ticket_id bo'lsa, tekshiramiz, aks holda hozirgi ochiq chat uchun deb faraz qilamiz
-      const isForCurrentChat = data.ticket_id
-        ? userIdFromUrl === data.ticket_id.toString()
-        : true; // ticket_id bo'lmasa, hozirgi chat uchun deb faraz qilamiz
-
-      if (data && data.id && isForCurrentChat) {
+    const handleNewMessage = (data: unknown) => {
+      const event = data as Message;
+      if (event?.id && event.ticket_id === ticketId) {
         // Yangi xabarni Message formatiga o'tkazish
         const newMessage: Message = {
-          id: data.id,
-          is_answer: data.is_answer,
-          formatted_time: data.formatted_time,
-          date: data.date,
-          base_url: data.base_url,
-          author: data.author,
-          content_type: data.content_type,
-          is_ready: data.is_ready,
+          ticket_id: event.ticket_id,
+          id: event.id,
+          is_answer: event.is_answer,
+          formatted_time: event.formatted_time,
+          date: event.date,
+          base_url: event.base_url,
+          author: event.author,
+          content_type: event.content_type,
+          is_ready: event.is_ready,
           message: {
-            content: data.message?.content || "",
-            reply_content: data.message?.reply_content,
-            reply_message_id: data.message?.reply_message_id,
+            content: event.message?.content || "",
+            reply_content: event.message?.reply_content,
+            reply_message_id: event.message?.reply_message_id,
           },
         };
 
@@ -76,12 +85,29 @@ function ChatRightSide() {
       }
     };
 
-    setNewMessageCallback(handleNewMessage);
-
-    return () => {
-      removeNewMessageCallback();
+    const handleUpdatedMessage = (data: unknown) => {
+      const event = data as Message;
+      if (event?.ticket_id !== ticketId) return;
+      setMessages((prev) => prev.map((message) => (message.id === event.id ? { ...message, ...event } : message)));
     };
+
+    const handleRemovedMessage = (data: unknown) => {
+      const event = data as Message;
+      if (event?.ticket_id !== ticketId) return;
+      setMessages((prev) => prev.filter((message) => message.id !== event.id));
+    };
+
+    const unsubscribers = [
+      subscribeNewMessage(handleNewMessage),
+      subscribeUpdatedMessage(handleUpdatedMessage),
+      subscribeRemovedMessage(handleRemovedMessage),
+    ];
+    return () => unsubscribers.forEach((unsubscribe) => unsubscribe());
   }, [userIdFromUrl]);
+
+  useEffect(() => subscribeSocketConnected(() => {
+    queryClient.invalidateQueries({ queryKey: ["singleTicket", userIdFromUrl] });
+  }), [queryClient, userIdFromUrl]);
 
   function togglePanel() {
     setIsOpen((prev) => !prev);
@@ -94,18 +120,17 @@ function ChatRightSide() {
   }, []);
 
   // Edit submit handler
-  const handleEditSubmit = useCallback((messageId: number, newContent: string) => {
-    // Socket orqali yuborish
-    socketEditMessage(messageId, newContent);
-    // Local state yangilash
-    setMessages((prev) =>
-      prev.map((msg) =>
-        msg.id === messageId
-          ? { ...msg, message: { ...msg.message, content: newContent } }
-          : msg
-      )
-    );
+  const handleEditSubmit = useCallback(async (messageId: number, newContent: string) => {
+    const result = await socketEditMessage(messageId, newContent);
+    if (!result.ok) {
+      showToast.error(result.error?.message || "Xabarni tahrirlab bo'lmadi");
+      return false;
+    }
+    setMessages((prev) => prev.map((msg) =>
+      msg.id === messageId ? { ...msg, message: { ...msg.message, content: newContent } } : msg
+    ));
     showToast.success("Xabar tahrirlandi");
+    return true;
   }, []);
 
   // Delete handler - xabarni o'chirish
@@ -114,11 +139,13 @@ function ChatRightSide() {
   }, []);
 
   // Delete confirm
-  const confirmDelete = useCallback(() => {
+  const confirmDelete = useCallback(async () => {
     if (deleteConfirm) {
-      // Socket orqali yuborish
-      socketDeleteMessage(deleteConfirm.id);
-      // Local state yangilash
+      const result = await socketDeleteMessage(deleteConfirm.id);
+      if (!result.ok) {
+        showToast.error(result.error?.message || "Xabarni o'chirib bo'lmadi");
+        return;
+      }
       setMessages((prev) => prev.filter((msg) => msg.id !== deleteConfirm.id));
       showToast.success("Xabar o'chirildi");
       setDeleteConfirm(null);
@@ -142,11 +169,7 @@ function ChatRightSide() {
             />
             <ChatMessages
               user={singleTicketResponse.ticket}
-              messages={
-                messages.length > 0
-                  ? messages
-                  : singleTicketResponse.messages ?? []
-              }
+              messages={messages}
               onReply={setReplyMessage}
               onEdit={handleEdit}
               onDelete={handleDelete}

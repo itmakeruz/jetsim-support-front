@@ -1,4 +1,5 @@
 export type Message = {
+  ticket_id?: number;
   id: number;
   is_answer: number;
   formatted_time: string;

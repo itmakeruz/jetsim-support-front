@@ -2,14 +2,13 @@ import { chatAPI } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ChatUser from "../components/ChatUser";
 import ChatUserSkeleton from "../components/ChatUserSkeleton";
-import { useEffect, useState, useRef, useMemo } from "react";
-import type { NotificationTicket, Ticket } from "@/types/chat";
+import { useDeferredValue, useEffect, useState, useRef } from "react";
+import type { Message, NotificationTicket, Ticket } from "@/types/chat";
 import { useSearchParams } from "react-router-dom";
 import {
-  removeNotificationCallback,
-  setNotificationCallback,
-  setNewMessageCallback,
-  removeNewMessageCallback,
+  subscribeNewMessage,
+  subscribeNotification,
+  subscribeSocketConnected,
 } from "@/lib/socket";
 import { playNotificationSound } from "@/utils/playNotificationSound";
 import { showNotification } from "@/utils/notification";
@@ -23,14 +22,15 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const selectedUserId = searchParams.get("userId");
+  const deferredSearch = useDeferredValue(searchQuery.trim());
   const [ticketsData, setTicketsData] = useState<Ticket[]>([]);
   const lastNotificationRef = useRef<{
     ticketId: number;
     messageId?: string;
   } | null>(null);
   const { data: ticketsResponse, isLoading: isLoadingTickets } = useQuery({
-    queryKey: ["tickets"],
-    queryFn: () => chatAPI.getTickets(),
+    queryKey: ["tickets", deferredSearch],
+    queryFn: () => chatAPI.getTickets(undefined, undefined, deferredSearch || undefined),
   });
   useEffect(() => {
     if (ticketsResponse?.tickets) {
@@ -45,7 +45,7 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
         const findTicket = prev.find((t) => t.id === newTicket.ticket_id);
 
         // Agar chat ochiq bo'lmasa, ovoz va bildirishnoma chiqarish
-        if (!isChatOpen && findTicket) {
+        if (!isChatOpen && findTicket && newTicket.last_message?.content) {
           // Bir xil xabar uchun takrorlanishni oldini olish
           const messageId = newTicket.last_message?.content;
           const isDuplicate =
@@ -117,27 +117,27 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
       }
     };
 
-    setNotificationCallback(handleNotification);
-
     // NewMessage event handler
-    const handleNewMessage = (data: any) => {
+    const handleNewMessage = (event: unknown) => {
+      const data = event as Message;
       console.log("newMessage event data:", data);
 
       // Agar data ichida ticket_id va message bo'lsa
-      if (data && data.ticket_id) {
-        const isChatOpen = selectedUserId == data.ticket_id.toString();
+      const ticketId = data?.ticket_id;
+      if (ticketId) {
+        const isChatOpen = selectedUserId == ticketId.toString();
 
         setTicketsData((prev: Ticket[]) => {
-          const findTicket = prev.find((t) => t.id === data.ticket_id);
+          const findTicket = prev.find((t) => t.id === ticketId);
 
           // Agar chat ochiq bo'lmasa, ovoz va bildirishnoma chiqarish
-          if (!isChatOpen && findTicket) {
+          if (data.is_answer === 0 && !isChatOpen && findTicket) {
             // Bir xil xabar uchun takrorlanishni oldini olish
             const messageContent =
-              data.message?.content || data.content || "Yangi xabar keldi";
+              data.message?.content || "Yangi xabar keldi";
             const messageId = messageContent;
             const isDuplicate =
-              lastNotificationRef.current?.ticketId === data.ticket_id &&
+              lastNotificationRef.current?.ticketId === ticketId &&
               lastNotificationRef.current?.messageId === messageId;
 
             if (!isDuplicate) {
@@ -151,7 +151,7 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
                   messageContent.length > 100
                     ? messageContent.substring(0, 100) + "..."
                     : messageContent,
-                tag: `ticket-${data.ticket_id}`,
+                tag: `ticket-${ticketId}`,
                 requireInteraction: false,
                 silent: false,
               });
@@ -161,7 +161,7 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
 
               // Keyingi tekshirish uchun saqlaymiz
               lastNotificationRef.current = {
-                ticketId: data.ticket_id,
+                ticketId,
                 messageId: messageId,
               };
             }
@@ -178,12 +178,11 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
             ...findTicket,
             last_message: {
               content:
-                data.message?.content ||
-                data.content ||
-                findTicket.last_message?.content ||
+                data.message?.content || findTicket.last_message?.content ||
                 "",
               content_type: data.content_type || findTicket.last_message?.content_type,
             },
+            formatted_date: data.formatted_time || findTicket.formatted_date,
             push: isChatOpen ? 0 : (findTicket.push || 0) + 1,
           };
 
@@ -201,26 +200,17 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
       }
     };
 
-    setNewMessageCallback(handleNewMessage);
-
+    const unsubscribeNotification = subscribeNotification(handleNotification);
+    const unsubscribeNewMessage = subscribeNewMessage(handleNewMessage);
     return () => {
-      removeNotificationCallback();
-      removeNewMessageCallback();
+      unsubscribeNotification();
+      unsubscribeNewMessage();
     };
   }, [selectedUserId, queryClient]);
 
-  // Search bo'yicha filter qilish
-  const filteredTickets = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return ticketsData;
-    }
-    const query = searchQuery.toLowerCase().trim();
-    return ticketsData.filter((ticket) => {
-      const userName = ticket.user_name?.toLowerCase() || "";
-      const lastMessage = ticket.last_message?.content?.toLowerCase() || "";
-      return userName.includes(query) || lastMessage.includes(query);
-    });
-  }, [ticketsData, searchQuery]);
+  useEffect(() => subscribeSocketConnected(() => {
+    queryClient.invalidateQueries({ queryKey: ["tickets"] });
+  }), [queryClient]);
 
   return (
     <div className="custom-scrollbar overflow-y-auto h-full">
@@ -228,7 +218,7 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
         ? Array.from({ length: 6 }).map((_, index) => (
             <ChatUserSkeleton key={index} />
           ))
-        : filteredTickets.map((ticket) => {
+        : ticketsData.map((ticket) => {
             return (
               <ChatUser
                 setTicketsData={setTicketsData}

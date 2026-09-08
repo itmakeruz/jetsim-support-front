@@ -3,6 +3,7 @@ import { Image as ImageIcon, Paperclip, Send, Smile, X } from "lucide-react";
 import { sendMessage } from "@/lib/socket";
 import { chatAPI } from "@/lib/api";
 import { toast } from "react-toastify";
+import type { AxiosError } from "axios";
 import { useQueryClient } from "@tanstack/react-query";
 import type { Message } from "@/types/chat";
 
@@ -12,7 +13,7 @@ interface ChatComposerProps {
   onReplyCancel?: () => void;
   editMessage?: Message | null;
   onEditCancel?: () => void;
-  onEditSubmit?: (messageId: number, content: string) => void;
+  onEditSubmit?: (messageId: number, content: string) => Promise<boolean>;
 }
 
 function ChatComposer({
@@ -26,6 +27,9 @@ function ChatComposer({
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
   const [isUploading, setIsUploading] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [retryFile, setRetryFile] = useState<File | null>(null);
   const [pastedImage, setPastedImage] = useState<{
     file: File;
     preview: string;
@@ -80,18 +84,33 @@ function ChatComposer({
     adjustTextareaHeight();
   }, [message, adjustTextareaHeight]);
 
-  const handleSubmit = (e?: React.FormEvent<HTMLFormElement>) => {
+  // A draft from the previous ticket must never be sent after a quick chat switch.
+  useEffect(() => {
+    setMessage("");
+  }, [ticketId]);
+
+  const handleSubmit = async (e?: React.FormEvent<HTMLFormElement>) => {
     e?.preventDefault();
-    if (message.trim() && ticketId) {
+    if (message.trim() && ticketId && !isSending) {
       // Edit mode
       if (editMessage && onEditSubmit) {
-        onEditSubmit(editMessage.id, message.trim());
-        setMessage("");
-        onEditCancel?.();
+        const wasEdited = await onEditSubmit(editMessage.id, message.trim());
+        if (wasEdited) {
+          setMessage("");
+          onEditCancel?.();
+        }
         return;
       }
-      // Normal send
-      sendMessage(ticketId, message.trim(), replyMessage?.id);
+      const text = message.trim();
+      const targetTicketId = ticketId;
+      setIsSending(true);
+      const result = await sendMessage(targetTicketId, text, replyMessage?.id);
+      setIsSending(false);
+      if (!result.ok) {
+        toast.error(result.error?.message || "Xabar yuborilmadi. Qayta urinib ko'ring.");
+        return;
+      }
+      // Clear only after the server has accepted the exact ticket/message pair.
       setMessage("");
       onReplyCancel?.();
     }
@@ -181,18 +200,23 @@ function ChatComposer({
 
     setIsUploading(true);
     try {
-      await chatAPI.uploadFile(ticketId, file);
+      setUploadProgress(0);
+      await chatAPI.uploadFile(ticketId, file, setUploadProgress);
       toast.success("Файл успешно загружен");
+      setRetryFile(null);
       // Tickets va singleTicket ni qayta fetch qilish
       queryClient.invalidateQueries({ queryKey: ["tickets"] });
       queryClient.invalidateQueries({ queryKey: ["singleTicket", ticketId.toString()] });
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("File upload error:", error);
+      setRetryFile(file);
+      const responseMessage = (error as AxiosError<{ message?: string }>).response?.data?.message;
       toast.error(
-        error?.response?.data?.message || "Ошибка при загрузке файла"
+        responseMessage || "Ошибка при загрузке файла"
       );
     } finally {
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -336,15 +360,26 @@ function ChatComposer({
         />
         <button
           type="submit"
-          disabled={!message.trim() || !ticketId || isUploading}
+          disabled={!message.trim() || !ticketId || isUploading || isSending}
           className="bg-main-color text-white rounded px-4 py-2 flex items-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Send className="w-4 h-4" />
           <span className="hidden sm:inline">
-            {editMessage ? "Сохранить" : "Отправить"}
+            {isSending ? "Yuborilmoqda..." : editMessage ? "Сохранить" : "Отправить"}
           </span>
         </button>
       </form>
+
+      {(isUploading || retryFile) && (
+        <div className="px-4 pb-3 text-xs text-muted-foreground flex items-center gap-3">
+          {isUploading ? <span>Fayl yuklanmoqda: {uploadProgress}%</span> : <span>Fayl yuborilmadi: {retryFile?.name}</span>}
+          {retryFile && !isUploading && (
+            <button type="button" onClick={() => handleFileUpload(retryFile)} className="text-blue-600 hover:underline">
+              Qayta yuborish
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Pasted image confirmation modal */}
       {pastedImage && (
