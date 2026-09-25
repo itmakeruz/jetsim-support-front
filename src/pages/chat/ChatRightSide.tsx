@@ -4,6 +4,7 @@ import { useSearchParams } from "react-router-dom";
 import ChatHeader from "./ChatRightComponents/ChatHeader";
 import ChatMessages from "./ChatRightComponents/ChatMessages";
 import ChatComposer from "./ChatRightComponents/ChatComposer";
+import ChatInfoPanel from "./ChatRightComponents/ChatInfoPanel";
 import { useState, useEffect, useCallback } from "react";
 import type { Message } from "@/types/chat";
 import {
@@ -26,6 +27,8 @@ function ChatRightSide() {
   const [replyMessage, setReplyMessage] = useState<Message | null>(null);
   const [editMessage, setEditMessage] = useState<Message | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Message | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [chatSearch, setChatSearch] = useState("");
   const {
     data: singleTicketResponse,
     isLoading: isLoadingSingleTicket,
@@ -43,6 +46,8 @@ function ChatRightSide() {
   // — операторы видели пустую переписку.
   useEffect(() => {
     setMessages(singleTicketResponse?.messages ?? []);
+    setChatSearch("");
+    setIsSearchOpen(false);
     setReplyMessage(null);
     setEditMessage(null);
     setDeleteConfirm(null);
@@ -109,6 +114,20 @@ function ChatRightSide() {
   useEffect(() => subscribeSocketConnected(() => {
     queryClient.invalidateQueries({ queryKey: ["singleTicket", userIdFromUrl] });
   }), [queryClient, userIdFromUrl]);
+
+  // Ищем по тексту сообщения и по цитате. У фото и файлов в content лежит путь,
+  // поэтому по ним не ищем — иначе поиск «png» выдавал бы все картинки
+  const visibleMessages = (() => {
+    const q = chatSearch.trim().toLowerCase();
+    if (!q) return messages;
+
+    return messages.filter((m) => {
+      if (!m.content_type?.includes("text")) return false;
+      const own = m.message?.content?.toLowerCase() ?? "";
+      const quoted = m.message?.reply_content?.content?.toLowerCase() ?? "";
+      return own.includes(q) || quoted.includes(q);
+    });
+  })();
 
   function togglePanel() {
     setIsOpen((prev) => !prev);
@@ -186,10 +205,18 @@ function ChatRightSide() {
               isOpen={isOpen}
               togglePanel={togglePanel}
               user={singleTicketResponse.user}
+              searchQuery={chatSearch}
+              onSearchChange={setChatSearch}
+              isSearchOpen={isSearchOpen}
+              onToggleSearch={() => {
+                setIsSearchOpen((prev) => !prev);
+                setChatSearch("");
+              }}
+              matchCount={visibleMessages.length}
             />
             <ChatMessages
               user={singleTicketResponse.ticket}
-              messages={messages}
+              messages={visibleMessages}
               onReply={setReplyMessage}
               onEdit={handleEdit}
               onDelete={handleDelete}
@@ -210,7 +237,15 @@ function ChatRightSide() {
           "w-[320px] absolute right-0 transition-all duration-300 top-0 bottom-0 border-l border-border bg-card text-card-foreground shadow-lg",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
-      />
+      >
+        {singleTicketResponse && (
+          <ChatInfoPanel
+            user={singleTicketResponse.user}
+            ticket={singleTicketResponse.ticket}
+            onClose={() => setIsOpen(false)}
+          />
+        )}
+      </div>
 
       {/* Delete confirmation modal */}
       {deleteConfirm && (

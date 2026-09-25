@@ -1,5 +1,6 @@
 import type { User } from "@/types/chat";
-import { Pin, SearchIcon } from "lucide-react";
+import { Pin, SearchIcon, X } from "lucide-react";
+import { useEffect, useRef } from "react";
 import UserAvatar from "@/components/UserAvatar";
 import { PanelIcon } from "@/assets/icons";
 import IconButton from "@/components/buttons/IconButton";
@@ -8,61 +9,89 @@ interface ChatHeaderProps {
   user: User;
   togglePanel: () => void;
   isOpen: boolean;
+  searchQuery: string;
+  onSearchChange: (value: string) => void;
+  isSearchOpen: boolean;
+  onToggleSearch: () => void;
+  matchCount: number;
 }
 
-function ChatHeader({ user, togglePanel, isOpen }: ChatHeaderProps) {
-  const handleSearch = () => {
-    // Chrome'dagi search funksiyasini ochish
-    // Ctrl+F yoki Cmd+F tugmalarini bosish
-    try {
-      // window.find() API'sini ishlatish (Chrome, Firefox, Safari)
-      if (typeof (window as any).find === "function") {
-        (window as any).find();
-        return;
-      }
-    } catch (error) {
-      console.log("window.find() not available");
-    }
+function ChatHeader({
+  user,
+  togglePanel,
+  isOpen,
+  searchQuery,
+  onSearchChange,
+  isSearchOpen,
+  onToggleSearch,
+  matchCount,
+}: ChatHeaderProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
 
-    // Fallback: Keyboard event'ini trigger qilish
-    const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
-    const event = new KeyboardEvent("keydown", {
-      key: "f",
-      code: "KeyF",
-      ctrlKey: !isMac,
-      metaKey: isMac,
-      bubbles: true,
-      cancelable: true,
-    });
-    document.dispatchEvent(event);
-  };
+  useEffect(() => {
+    if (isSearchOpen) inputRef.current?.focus();
+  }, [isSearchOpen]);
+
   return (
-    <header className="flex items-center justify-between px-6 h-[70px] shrink-0 bg-card border-b border-border">
-      <div className="flex items-center gap-3">
-        <UserAvatar
-          image={`${user.base_url}/${user.user_image}`}
-          size="md"
-          name={user.name}
-        />
-        <div className="flex flex-col gap-1">
-          <span className="font-semibold text-xs md:text-sm text-foreground">
-            {user?.name}
-          </span>
+    <header className="flex items-center justify-between gap-3 px-6 h-[70px] shrink-0 bg-card border-b border-border">
+      {isSearchOpen ? (
+        <div className="flex flex-1 items-center gap-3">
+          <SearchIcon className="w-5 h-5 shrink-0 text-muted-foreground" />
+          <input
+            ref={inputRef}
+            value={searchQuery}
+            onChange={(e) => onSearchChange(e.target.value)}
+            onKeyDown={(e) => e.key === "Escape" && onToggleSearch()}
+            placeholder="Поиск по этой переписке…"
+            className="flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
+          />
+          {searchQuery && (
+            <span className="shrink-0 text-xs text-muted-foreground">
+              {matchCount > 0 ? `Найдено: ${matchCount}` : "Ничего не найдено"}
+            </span>
+          )}
         </div>
-      </div>
-      <div className="flex items-center gap-2 sm:gap-3">
-        <IconButton icon={<Pin className="w-5 h-5" />} ariaLabel="Pin" />
+      ) : (
+        <div className="flex items-center gap-3">
+          <UserAvatar
+            image={`${user.base_url}/${user.user_image}`}
+            size="md"
+            name={user.name}
+          />
+          <div className="flex flex-col gap-1">
+            <span className="font-semibold text-xs md:text-sm text-foreground">
+              {user?.name}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="flex shrink-0 items-center gap-2 sm:gap-3">
+        {!isSearchOpen && (
+          <IconButton icon={<Pin className="w-5 h-5" />} ariaLabel="Pin" />
+        )}
+
         <IconButton
-          icon={<SearchIcon className="w-5 h-5" />}
-          ariaLabel="Search"
-          onClick={handleSearch}
+          icon={
+            isSearchOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <SearchIcon className="w-5 h-5" />
+            )
+          }
+          ariaLabel={isSearchOpen ? "Закрыть поиск" : "Поиск по переписке"}
+          isActive={isSearchOpen}
+          onClick={onToggleSearch}
         />
-        <IconButton
-          icon={<PanelIcon className="w-5 h-5" />}
-          onClick={togglePanel}
-          isActive={isOpen}
-          ariaLabel="Toggle panel"
-        />
+
+        {!isSearchOpen && (
+          <IconButton
+            icon={<PanelIcon className="w-5 h-5" />}
+            onClick={togglePanel}
+            isActive={isOpen}
+            ariaLabel="Toggle panel"
+          />
+        )}
       </div>
     </header>
   );
