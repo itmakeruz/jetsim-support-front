@@ -3,7 +3,9 @@ import type { KeyboardEvent } from "react";
 import UserAvatar from "@/components/UserAvatar";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
+import { Pin } from "lucide-react";
 import LastMessagePreview from "./LastMessagePreview";
+import { usePinnedStore } from "@/store/pinnedStore";
 
 interface ChatUserProps {
   ticket: Ticket;
@@ -12,6 +14,7 @@ interface ChatUserProps {
 
 function ChatUser({ ticket, setTicketsData }: ChatUserProps) {
   const [searchParams, setSearchParams] = useSearchParams();
+  const isPinned = usePinnedStore((state) => state.pinned.includes(ticket.id));
   const userIdFromUrl = searchParams.get("userId");
   const onUserSelect = (user: Ticket) => {
     setSearchParams({ userId: user.id.toString() });
@@ -56,7 +59,13 @@ function ChatUser({ ticket, setTicketsData }: ChatUserProps) {
             >
               {ticket.user_name}
             </div>
-            <span className="leading-none text-[12px] whitespace-nowrap font-medium text-muted-foreground">
+            <span className="flex shrink-0 items-center gap-1 leading-none text-[12px] whitespace-nowrap font-medium text-muted-foreground">
+              {isPinned && (
+                <Pin
+                  className="h-3.5 w-3.5 shrink-0 fill-current text-blue-600 dark:text-blue-400"
+                  aria-label="Закреплён"
+                />
+              )}
               {ticket.formatted_date}
             </span>
           </div>
