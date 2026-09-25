@@ -37,19 +37,16 @@ function ChatRightSide() {
     enabled: !!userIdFromUrl,
   });
 
-  // Xabarlarni yangilash
+  // Один эффект вместо двух. Раньше засев сообщений и очистка при смене чата
+  // жили в разных useEffect: React выполняет их в порядке объявления, поэтому
+  // при переходе в уже закэшированный чат сообщения ставились и тут же стирались
+  // — операторы видели пустую переписку.
   useEffect(() => {
-    if (singleTicketResponse?.messages) {
-      setMessages(singleTicketResponse.messages);
-    }
-  }, [singleTicketResponse]);
-
-  useEffect(() => {
-    setMessages([]);
+    setMessages(singleTicketResponse?.messages ?? []);
     setReplyMessage(null);
     setEditMessage(null);
     setDeleteConfirm(null);
-  }, [userIdFromUrl]);
+  }, [userIdFromUrl, singleTicketResponse]);
 
   // Every real-time event must name its ticket. Never attach an unscoped event
   // to whichever chat happens to be open while the operator is switching chats.
