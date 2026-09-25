@@ -1,11 +1,13 @@
 import type { Ticket } from "@/types/chat";
 import type { KeyboardEvent } from "react";
+import { useState } from "react";
 import UserAvatar from "@/components/UserAvatar";
 import { useSearchParams } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Pin } from "lucide-react";
 import LastMessagePreview from "./LastMessagePreview";
 import { usePinnedStore } from "@/store/pinnedStore";
+import ChatContextMenu from "./ChatContextMenu";
 
 interface ChatUserProps {
   ticket: Ticket;
@@ -15,6 +17,10 @@ interface ChatUserProps {
 function ChatUser({ ticket, setTicketsData }: ChatUserProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const isPinned = usePinnedStore((state) => state.pinned.includes(ticket.id));
+  const togglePin = usePinnedStore((state) => state.toggle);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(
+    null
+  );
   const userIdFromUrl = searchParams.get("userId");
   const onUserSelect = (user: Ticket) => {
     setSearchParams({ userId: user.id.toString() });
@@ -39,10 +45,17 @@ function ChatUser({ ticket, setTicketsData }: ChatUserProps) {
       aria-pressed={isSelected}
       onClick={() => onUserSelect(ticket)}
       onKeyDown={handleKeyDown}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        setContextMenu({ x: e.clientX, y: e.clientY });
+      }}
       className={cn(
-        "px-[20px] py-[12px] cursor-pointer transition-colors",
+        "relative px-[20px] py-[12px] cursor-pointer transition-colors",
         "hover:bg-ticket-active-bg dark:hover:bg-white/6",
-        isSelected && "bg-ticket-active-bg dark:bg-white/9"
+        isSelected && "bg-ticket-active-bg dark:bg-white/9",
+        // Закреплённые выделяем фоном и полосой слева: одной иконки у даты мало
+        isPinned && !isSelected && "bg-blue-50/60 dark:bg-blue-400/8",
+        isPinned && "before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-blue-600 dark:before:bg-blue-400"
       )}
     >
       <div className="flex items-center justify-between gap-3">
@@ -82,6 +95,17 @@ function ChatUser({ ticket, setTicketsData }: ChatUserProps) {
           </div>
         </div>
       </div>
+
+      {contextMenu && (
+        <ChatContextMenu
+          ticketId={ticket.id}
+          userName={ticket.user_name}
+          isPinned={isPinned}
+          position={contextMenu}
+          onClose={() => setContextMenu(null)}
+          onTogglePin={() => togglePin(ticket.id)}
+        />
+      )}
     </div>
   );
 }
