@@ -272,3 +272,10 @@ svg {
     transform: translateX(100%);
   }
 }
+
+/* Подсветка сообщения, к которому перешли по клику на цитату */
+.message-highlight {
+  background-color: rgba(59, 130, 246, 0.18);
+  outline: 2px solid rgba(59, 130, 246, 0.45);
+  outline-offset: 2px;
+}

@@ -13,6 +13,7 @@ export type Message = {
     reply_content?: {
       content: string;
       content_type: string;
+      author?: string;
     };
     reply_message_id?: number;
   };

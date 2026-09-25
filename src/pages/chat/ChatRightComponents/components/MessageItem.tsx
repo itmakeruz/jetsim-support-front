@@ -6,6 +6,14 @@ import TextMessage from "./TextMessage";
 import SimpleVideoPlayer from "./SimpleVideoPlayer";
 import ReplyMessage from "./ReplyMessage";
 import DocumentMessage from "./DocumentMessage";
+import QuotedPreview from "./QuotedPreview";
+
+const REPLY_MEDIA_TYPES = [
+  "reply_photo",
+  "reply_video",
+  "reply_voice",
+  "reply_document",
+];
 
 interface MessageItemProps {
   message: Message;
@@ -34,9 +42,11 @@ export default function MessageItem({
   onEdit,
   onDelete,
 }: MessageItemProps) {
+  // Якорь для перехода по цитате — QuotedPreview ищет сообщение по этому атрибуту
   return (
     <div
-      className={`flex gap-3 items-end ${
+      data-message-id={message.id}
+      className={`flex gap-3 items-end rounded-lg transition-colors ${
         isMe ? "justify-end" : "justify-start"
       }`}
     >
@@ -105,6 +115,50 @@ export default function MessageItem({
 
         {message.content_type === "document" && (
           <DocumentMessage message={message} isMe={isMe} onReply={onReply} />
+        )}
+
+        {/*
+          Ответы на медиа раньше не имели ни одной ветки рендера и показывались
+          пустотой. Цитату выводим сверху, само вложение — обычным компонентом.
+        */}
+        {REPLY_MEDIA_TYPES.includes(message.content_type) && (
+          <div
+            className={`max-w-full flex flex-col ${
+              isMe ? "items-end" : "items-start"
+            }`}
+          >
+            <QuotedPreview message={message} isMe={isMe} />
+
+            {message.content_type === "reply_photo" && (
+              <PhotoMessage
+                message={message}
+                onImageClick={onImageClick}
+                onImageLoad={onImageLoad}
+                onReply={onReply}
+              />
+            )}
+
+            {message.content_type === "reply_video" && (
+              <SimpleVideoPlayer
+                message={message}
+                videoRefs={videoRefs}
+                playingVideoId={playingVideoId}
+                onVideoPlay={onVideoPlay}
+                onVideoPause={onVideoPause}
+              />
+            )}
+
+            {message.content_type === "reply_voice" && (
+              <VoicePlayer
+                src={`${message.base_url}/${message.message.content}`}
+                formattedTime={message.formatted_time}
+              />
+            )}
+
+            {message.content_type === "reply_document" && (
+              <DocumentMessage message={message} isMe={isMe} onReply={onReply} />
+            )}
+          </div>
         )}
       </div>
     </div>

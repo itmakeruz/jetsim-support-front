@@ -2,13 +2,14 @@ import { chatAPI } from "@/lib/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import ChatUser from "../components/ChatUser";
 import ChatUserSkeleton from "../components/ChatUserSkeleton";
-import { useDeferredValue, useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Message, NotificationTicket, Ticket } from "@/types/chat";
 import { useSearchParams } from "react-router-dom";
 import {
   subscribeNewMessage,
   subscribeNotification,
   subscribeSocketConnected,
+  subscribeTicketUpdated,
 } from "@/lib/socket";
 import { playNotificationSound } from "@/utils/playNotificationSound";
 import { showNotification } from "@/utils/notification";
@@ -18,98 +19,129 @@ interface ChatLeftTicketsProps {
   searchQuery: string;
 }
 
+interface TicketsResponse {
+  tickets: Ticket[];
+}
+
+/** Список подтягивается сокетом; интервал — страховка на случай пропущенного события */
+const BACKGROUND_REFRESH_MS = 5 * 60 * 1000;
+
+/** Поиск по тексту сообщений идёт регуляркой по всей таблице — не дёргаем его на каждое нажатие */
+const SEARCH_DEBOUNCE_MS = 400;
+
 function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
   const queryClient = useQueryClient();
   const [searchParams] = useSearchParams();
   const selectedUserId = searchParams.get("userId");
-  const deferredSearch = useDeferredValue(searchQuery.trim());
-  const [ticketsData, setTicketsData] = useState<Ticket[]>([]);
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery.trim());
   const lastNotificationRef = useRef<{
     ticketId: number;
     messageId?: string;
   } | null>(null);
-  const { data: ticketsResponse, isLoading: isLoadingTickets } = useQuery({
-    queryKey: ["tickets", deferredSearch],
-    queryFn: () => chatAPI.getTickets(undefined, undefined, deferredSearch || undefined),
-  });
+
   useEffect(() => {
-    if (ticketsResponse?.tickets) {
-      setTicketsData(ticketsResponse.tickets);
-    }
-  }, [ticketsResponse]);
+    const timer = setTimeout(
+      () => setDebouncedSearch(searchQuery.trim()),
+      SEARCH_DEBOUNCE_MS
+    );
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const queryKey = useMemo(() => ["tickets", debouncedSearch], [debouncedSearch]);
+
+  const { data: ticketsResponse, isLoading: isLoadingTickets } = useQuery({
+    queryKey,
+    queryFn: () =>
+      chatAPI.getTickets(undefined, undefined, debouncedSearch || undefined),
+    refetchInterval: BACKGROUND_REFRESH_MS,
+  });
+
+  const ticketsData = ticketsResponse?.tickets ?? [];
+
+  /**
+   * Пишем прямо в кэш react-query вместо локального useState.
+   * Раньше список жил в useState-зеркале: react-query при рефетче возвращает
+   * ту же ссылку (structural sharing), эффект не срабатывал, и испорченное
+   * состояние чинилось только перезагрузкой страницы.
+   */
+  const updateTickets = useCallback(
+    (updater: (prev: Ticket[]) => Ticket[]) => {
+      queryClient.setQueryData<TicketsResponse>(queryKey, (old) =>
+        old ? { ...old, tickets: updater(old.tickets ?? []) } : old
+      );
+    },
+    [queryClient, queryKey]
+  );
+
+  const readTickets = useCallback(
+    () => queryClient.getQueryData<TicketsResponse>(queryKey)?.tickets ?? [],
+    [queryClient, queryKey]
+  );
+
+  /** Звук, системное уведомление и мигание вкладкой — побочные эффекты, им не место в апдейтере состояния */
+  const notifyAboutMessage = useCallback(
+    (ticketId: number, userName: string, content: string) => {
+      const isDuplicate =
+        lastNotificationRef.current?.ticketId === ticketId &&
+        lastNotificationRef.current?.messageId === content;
+
+      if (isDuplicate) return;
+
+      playNotificationSound();
+      showNotification(userName, {
+        body: content.length > 100 ? `${content.substring(0, 100)}...` : content,
+        tag: `ticket-${ticketId}`,
+        requireInteraction: false,
+        silent: false,
+      });
+      requestPageAttention(userName, content);
+
+      lastNotificationRef.current = { ticketId, messageId: content };
+    },
+    []
+  );
+
+  const moveTicketToTop = useCallback(
+    (
+      ticketId: number,
+      patch: Pick<Ticket, "last_message" | "formatted_date" | "push">
+    ) => {
+      updateTickets((prev) => {
+        const target = prev.find((ticket) => ticket.id === ticketId);
+        if (!target) return prev;
+
+        const updated: Ticket = { ...target, ...patch };
+        return [updated, ...prev.filter((ticket) => ticket.id !== ticketId)];
+      });
+    },
+    [updateTickets]
+  );
+
   useEffect(() => {
     const handleNotification = (newTicket: NotificationTicket) => {
-      const isChatOpen = selectedUserId == newTicket.ticket_id.toString();
+      const ticketId = newTicket.ticket_id;
+      const isChatOpen = selectedUserId == ticketId.toString();
+      const existing = readTickets().find((ticket) => ticket.id === ticketId);
 
-      setTicketsData((prev: Ticket[]) => {
-        const findTicket = prev.find((t) => t.id === newTicket.ticket_id);
+      if (!existing) {
+        queryClient.invalidateQueries({ queryKey: ["tickets"] });
+        return;
+      }
 
-        // Agar chat ochiq bo'lmasa, ovoz va bildirishnoma chiqarish
-        if (!isChatOpen && findTicket && newTicket.last_message?.content) {
-          // Bir xil xabar uchun takrorlanishni oldini olish
-          const messageId = newTicket.last_message?.content;
-          const isDuplicate =
-            lastNotificationRef.current?.ticketId === newTicket.ticket_id &&
-            lastNotificationRef.current?.messageId === messageId;
+      const content = newTicket.last_message?.content;
+      if (!isChatOpen && content) {
+        notifyAboutMessage(ticketId, existing.user_name || "Новое сообщение", content);
+      }
 
-          if (!isDuplicate) {
-            playNotificationSound();
-
-            // Bildirishnoma chiqarish
-            const messageContent =
-              newTicket.last_message?.content || "Yangi xabar keldi";
-            const userName = findTicket.user_name || "Yangi xabar";
-
-            console.log(
-              "Bildirishnoma chiqarishga harakat:",
-              userName,
-              messageContent
-            );
-
-            showNotification(userName, {
-              body:
-                messageContent.length > 100
-                  ? messageContent.substring(0, 100) + "..."
-                  : messageContent,
-              tag: `ticket-${newTicket.ticket_id}`, // Bir xil ticket uchun eski bildirishnomani yangilash
-              requireInteraction: false,
-              silent: false,
-            });
-
-            // Oynani fokus qilish va title'ni o'zgartirish
-            requestPageAttention(userName, messageContent);
-
-            // Keyingi tekshirish uchun saqlaymiz
-            lastNotificationRef.current = {
-              ticketId: newTicket.ticket_id,
-              messageId: messageId,
-            };
-          }
-        }
-
-        // ❌ YO'Q bo'lsa
-        if (!findTicket) {
-          queryClient.invalidateQueries({ queryKey: ["tickets"] });
-          return prev;
-        }
-
-        // Agar chat ochiq bo'lsa, push 0, aks holda push oshiriladi
-        const updatedTicket: Ticket = {
-          ...findTicket, // id va boshqa fieldlar saqlanadi
-          last_message: {
-            content: newTicket.last_message.content,
-            content_type: newTicket.last_message.content_type,
-          },
-          formatted_date: newTicket.date,
-          push: isChatOpen ? 0 : (findTicket.push || 0) + 1,
-        };
-
-        // eski joyidan olib tashlab, tepaga qo'yamiz
-        const rest = prev.filter((t) => t.id !== findTicket?.id);
-        return [updatedTicket, ...rest];
+      moveTicketToTop(ticketId, {
+        last_message: {
+          content: newTicket.last_message.content,
+          content_type: newTicket.last_message.content_type,
+        },
+        formatted_date: newTicket.date,
+        push: isChatOpen ? 0 : (existing.push || 0) + 1,
       });
 
-      // Agar bu xabar ochiq turgan chat uchun bo'lsa, xabarlarni yangilash
       if (isChatOpen) {
         queryClient.invalidateQueries({
           queryKey: ["singleTicket", selectedUserId],
@@ -117,100 +149,72 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
       }
     };
 
-    // NewMessage event handler
     const handleNewMessage = (event: unknown) => {
       const data = event as Message;
-      console.log("newMessage event data:", data);
-
-      // Agar data ichida ticket_id va message bo'lsa
       const ticketId = data?.ticket_id;
-      if (ticketId) {
-        const isChatOpen = selectedUserId == ticketId.toString();
+      if (!ticketId) return;
 
-        setTicketsData((prev: Ticket[]) => {
-          const findTicket = prev.find((t) => t.id === ticketId);
+      const isChatOpen = selectedUserId == ticketId.toString();
+      const existing = readTickets().find((ticket) => ticket.id === ticketId);
 
-          // Agar chat ochiq bo'lmasa, ovoz va bildirishnoma chiqarish
-          if (data.is_answer === 0 && !isChatOpen && findTicket) {
-            // Bir xil xabar uchun takrorlanishni oldini olish
-            const messageContent =
-              data.message?.content || "Yangi xabar keldi";
-            const messageId = messageContent;
-            const isDuplicate =
-              lastNotificationRef.current?.ticketId === ticketId &&
-              lastNotificationRef.current?.messageId === messageId;
-
-            if (!isDuplicate) {
-              playNotificationSound();
-
-              // Bildirishnoma chiqarish
-              const userName = findTicket.user_name || "Yangi xabar";
-
-              showNotification(userName, {
-                body:
-                  messageContent.length > 100
-                    ? messageContent.substring(0, 100) + "..."
-                    : messageContent,
-                tag: `ticket-${ticketId}`,
-                requireInteraction: false,
-                silent: false,
-              });
-
-              // Oynani fokus qilish va title'ni o'zgartirish
-              requestPageAttention(userName, messageContent);
-
-              // Keyingi tekshirish uchun saqlaymiz
-              lastNotificationRef.current = {
-                ticketId,
-                messageId: messageId,
-              };
-            }
-          }
-
-          // Ticket topilmasa, yangilash
-          if (!findTicket) {
-            queryClient.invalidateQueries({ queryKey: ["tickets"] });
-            return prev;
-          }
-
-          // Ticket yangilash
-          const updatedTicket: Ticket = {
-            ...findTicket,
-            last_message: {
-              content:
-                data.message?.content || findTicket.last_message?.content ||
-                "",
-              content_type: data.content_type || findTicket.last_message?.content_type,
-            },
-            formatted_date: data.formatted_time || findTicket.formatted_date,
-            push: isChatOpen ? 0 : (findTicket.push || 0) + 1,
-          };
-
-          // Ticketni tepaga ko'tarish
-          const rest = prev.filter((t) => t.id !== findTicket?.id);
-          return [updatedTicket, ...rest];
-        });
-
-        // Agar bu xabar ochiq turgan chat uchun bo'lsa, xabarlarni yangilash
-        if (isChatOpen) {
-          queryClient.invalidateQueries({
-            queryKey: ["singleTicket", selectedUserId],
-          });
-        }
+      if (!existing) {
+        queryClient.invalidateQueries({ queryKey: ["tickets"] });
+        return;
       }
+
+      if (data.is_answer === 0 && !isChatOpen) {
+        notifyAboutMessage(
+          ticketId,
+          existing.user_name || "Новое сообщение",
+          data.message?.content || "Новое сообщение"
+        );
+      }
+
+      moveTicketToTop(ticketId, {
+        last_message: {
+          content: data.message?.content || existing.last_message?.content || "",
+          content_type: data.content_type || existing.last_message?.content_type,
+        },
+        formatted_date: data.formatted_time || existing.formatted_date,
+        push: isChatOpen ? 0 : (existing.push || 0) + 1,
+      });
+
+      if (isChatOpen) {
+        queryClient.invalidateQueries({
+          queryKey: ["singleTicket", selectedUserId],
+        });
+      }
+    };
+
+    // Полезной нагрузки этих событий достаточно не всегда, поэтому просто перезапрашиваем список
+    const handleTicketUpdated = () => {
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
     };
 
     const unsubscribeNotification = subscribeNotification(handleNotification);
     const unsubscribeNewMessage = subscribeNewMessage(handleNewMessage);
+    const unsubscribeTicketUpdated = subscribeTicketUpdated(handleTicketUpdated);
+
     return () => {
       unsubscribeNotification();
       unsubscribeNewMessage();
+      unsubscribeTicketUpdated();
     };
-  }, [selectedUserId, queryClient]);
+  }, [
+    selectedUserId,
+    queryClient,
+    readTickets,
+    moveTicketToTop,
+    notifyAboutMessage,
+  ]);
 
-  useEffect(() => subscribeSocketConnected(() => {
-    queryClient.invalidateQueries({ queryKey: ["tickets"] });
-  }), [queryClient]);
+  useEffect(
+    () =>
+      subscribeSocketConnected(() => {
+        queryClient.invalidateQueries({ queryKey: ["tickets"] });
+      }),
+    [queryClient]
+  );
 
   return (
     <div className="custom-scrollbar overflow-y-auto h-full">
@@ -218,15 +222,13 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
         ? Array.from({ length: 6 }).map((_, index) => (
             <ChatUserSkeleton key={index} />
           ))
-        : ticketsData.map((ticket) => {
-            return (
-              <ChatUser
-                setTicketsData={setTicketsData}
-                key={ticket.id}
-                ticket={ticket}
-              />
-            );
-          })}
+        : ticketsData.map((ticket) => (
+            <ChatUser
+              setTicketsData={updateTickets}
+              key={ticket.id}
+              ticket={ticket}
+            />
+          ))}
     </div>
   );
 }

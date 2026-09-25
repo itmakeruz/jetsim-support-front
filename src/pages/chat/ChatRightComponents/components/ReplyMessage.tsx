@@ -1,8 +1,8 @@
 import { useState } from "react";
 import type { Message } from "@/types/chat";
-import { Reply } from "lucide-react";
 import { showToast } from "@/utils/toastHelper";
 import MessageContextMenu from "./MessageContextMenu";
+import QuotedPreview from "./QuotedPreview";
 
 interface ReplyMessageProps {
   message: Message;
@@ -23,9 +23,6 @@ export default function ReplyMessage({
     x: number;
     y: number;
   } | null>(null);
-
-  const replyContent = message.message.reply_content;
-  const replyText = replyContent?.content || "";
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -57,22 +54,7 @@ export default function ReplyMessage({
             : "bg-main-color rounded-[12px_12px_12px_0] text-white"
         }`}
       >
-        {/* Reply xabar ko'rsatish */}
-        {replyContent && (
-          <div
-            className={`mb-2 pb-2 border-l-2 pl-2 ${
-              isMe
-                ? "border-gray-400 dark:border-muted-foreground/40 text-gray-600 dark:text-muted-foreground"
-                : "border-white/50 text-white/80"
-            }`}
-          >
-            <div className="flex items-center gap-1 mb-1">
-              <Reply className="w-3 h-3" />
-              <span className="text-[11px] font-medium">Reply</span>
-            </div>
-            <p className="text-[12px] line-clamp-2">{replyText}</p>
-          </div>
-        )}
+        <QuotedPreview message={message} isMe={isMe} />
 
         {/* Asosiy xabar matni */}
         <p className="whitespace-pre-wrap wrap-break-word">

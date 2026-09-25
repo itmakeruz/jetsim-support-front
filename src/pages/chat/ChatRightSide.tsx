@@ -26,12 +26,16 @@ function ChatRightSide() {
   const [replyMessage, setReplyMessage] = useState<Message | null>(null);
   const [editMessage, setEditMessage] = useState<Message | null>(null);
   const [deleteConfirm, setDeleteConfirm] = useState<Message | null>(null);
-  const { data: singleTicketResponse, isLoading: isLoadingSingleTicket } =
-    useQuery({
-      queryKey: ["singleTicket", userIdFromUrl],
-      queryFn: () => chatAPI.getSingleTicket(Number(userIdFromUrl)),
-      enabled: !!userIdFromUrl,
-    });
+  const {
+    data: singleTicketResponse,
+    isLoading: isLoadingSingleTicket,
+    isError: isSingleTicketError,
+    refetch: refetchSingleTicket,
+  } = useQuery({
+    queryKey: ["singleTicket", userIdFromUrl],
+    queryFn: () => chatAPI.getSingleTicket(Number(userIdFromUrl)),
+    enabled: !!userIdFromUrl,
+  });
 
   // Xabarlarni yangilash
   useEffect(() => {
@@ -160,7 +164,26 @@ function ChatRightSide() {
           isOpen ? "pr-[320px]" : "pr-0"
         )}
       >
-        {singleTicketResponse && !isLoadingSingleTicket ? (
+        {!userIdFromUrl ? (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground text-center px-4">
+            Выберите пользователя чтобы увидеть переписку
+          </div>
+        ) : isLoadingSingleTicket ? (
+          <div className="flex-1 flex items-center justify-center text-muted-foreground text-center px-4">
+            Загружаем переписку…
+          </div>
+        ) : isSingleTicketError || !singleTicketResponse ? (
+          <div className="flex-1 flex flex-col gap-3 items-center justify-center text-center px-4">
+            <p className="text-muted-foreground">Не удалось загрузить переписку</p>
+            <button
+              type="button"
+              onClick={() => refetchSingleTicket()}
+              className="px-4 py-2 rounded-lg bg-muted hover:bg-accent text-foreground transition-colors"
+            >
+              Повторить
+            </button>
+          </div>
+        ) : (
           <>
             <ChatHeader
               isOpen={isOpen}
@@ -183,10 +206,6 @@ function ChatRightSide() {
               onEditSubmit={handleEditSubmit}
             />
           </>
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-muted-foreground text-center px-4">
-            Выберите пользователя чтобы увидеть переписку
-          </div>
         )}
       </div>
       <div

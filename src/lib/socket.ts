@@ -16,6 +16,7 @@ const notificationListeners = new Set<(ticket: NotificationTicket) => void>();
 const newMessageListeners = new Set<(data: unknown) => void>();
 const updateMessageListeners = new Set<(data: unknown) => void>();
 const removeMessageListeners = new Set<(data: unknown) => void>();
+const ticketUpdatedListeners = new Set<(data: unknown) => void>();
 const connectListeners = new Set<() => void>();
 
 const socketUrl =
@@ -91,6 +92,11 @@ export const initializeSocket = () => {
   socket.on("updatemessage", (data: unknown) => updateMessageListeners.forEach((callback) => callback(data)));
   socket.on("removemessage", (data: unknown) => removeMessageListeners.forEach((callback) => callback(data)));
 
+  // Сервер шлёт эти два события при смене статуса тикета, темы и счётчиков,
+  // но раньше их никто не слушал — поэтому список диалогов не обновлялся сам
+  socket.on("updateticket", (data: unknown) => ticketUpdatedListeners.forEach((callback) => callback(data)));
+  socket.on("updateduser", (data: unknown) => ticketUpdatedListeners.forEach((callback) => callback(data)));
+
   return socket;
 };
 
@@ -111,6 +117,7 @@ export const subscribeNotification = (callback: (ticket: NotificationTicket) => 
 export const subscribeNewMessage = (callback: (data: unknown) => void) => subscribe(newMessageListeners, callback);
 export const subscribeUpdatedMessage = (callback: (data: unknown) => void) => subscribe(updateMessageListeners, callback);
 export const subscribeRemovedMessage = (callback: (data: unknown) => void) => subscribe(removeMessageListeners, callback);
+export const subscribeTicketUpdated = (callback: (data: unknown) => void) => subscribe(ticketUpdatedListeners, callback);
 export const subscribeSocketConnected = (callback: () => void) => {
   connectListeners.add(callback);
   return () => {
