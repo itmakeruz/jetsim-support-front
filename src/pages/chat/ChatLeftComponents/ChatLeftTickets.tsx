@@ -14,6 +14,7 @@ import {
 import { playNotificationSound } from "@/utils/playNotificationSound";
 import { showNotification } from "@/utils/notification";
 import { requestPageAttention } from "@/utils/pageAttention";
+import { usePinnedStore } from "@/store/pinnedStore";
 
 interface ChatLeftTicketsProps {
   searchQuery: string;
@@ -56,7 +57,22 @@ function ChatLeftTickets({ searchQuery }: ChatLeftTicketsProps) {
     refetchInterval: BACKGROUND_REFRESH_MS,
   });
 
-  const ticketsData = ticketsResponse?.tickets ?? [];
+  const pinned = usePinnedStore((state) => state.pinned);
+
+  // Закреплённые поднимаем наверх, внутри группы сохраняем порядок сервера
+  const ticketsData = useMemo(() => {
+    const list = ticketsResponse?.tickets ?? [];
+    if (pinned.length === 0) return list;
+
+    return [...list].sort((a, b) => {
+      const ai = pinned.indexOf(a.id);
+      const bi = pinned.indexOf(b.id);
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
+  }, [ticketsResponse, pinned]);
 
   /**
    * Пишем прямо в кэш react-query вместо локального useState.

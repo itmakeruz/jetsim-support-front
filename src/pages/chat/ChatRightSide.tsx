@@ -17,6 +17,7 @@ import {
 } from "@/lib/socket";
 import { showToast } from "@/utils/toastHelper";
 import { cn } from "@/lib/utils";
+import { usePinnedStore } from "@/store/pinnedStore";
 
 function ChatRightSide() {
   const queryClient = useQueryClient();
@@ -29,6 +30,7 @@ function ChatRightSide() {
   const [deleteConfirm, setDeleteConfirm] = useState<Message | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [chatSearch, setChatSearch] = useState("");
+  const { pinned, toggle: togglePin } = usePinnedStore();
   const {
     data: singleTicketResponse,
     isLoading: isLoadingSingleTicket,
@@ -213,6 +215,8 @@ function ChatRightSide() {
                 setChatSearch("");
               }}
               matchCount={visibleMessages.length}
+              isPinned={pinned.includes(Number(userIdFromUrl))}
+              onTogglePin={() => togglePin(Number(userIdFromUrl))}
             />
             <ChatMessages
               user={singleTicketResponse.ticket}

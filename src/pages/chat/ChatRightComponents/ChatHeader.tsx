@@ -14,6 +14,8 @@ interface ChatHeaderProps {
   isSearchOpen: boolean;
   onToggleSearch: () => void;
   matchCount: number;
+  isPinned: boolean;
+  onTogglePin: () => void;
 }
 
 function ChatHeader({
@@ -25,6 +27,8 @@ function ChatHeader({
   isSearchOpen,
   onToggleSearch,
   matchCount,
+  isPinned,
+  onTogglePin,
 }: ChatHeaderProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -68,7 +72,12 @@ function ChatHeader({
 
       <div className="flex shrink-0 items-center gap-2 sm:gap-3">
         {!isSearchOpen && (
-          <IconButton icon={<Pin className="w-5 h-5" />} ariaLabel="Pin" />
+          <IconButton
+            icon={<Pin className="w-5 h-5" />}
+            ariaLabel={isPinned ? "Открепить чат" : "Закрепить чат"}
+            isActive={isPinned}
+            onClick={onTogglePin}
+          />
         )}
 
         <IconButton

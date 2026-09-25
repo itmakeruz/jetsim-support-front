@@ -1,5 +1,5 @@
 import { lazy, Suspense } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { adminRoutes } from "./adminRoutes";
 import ProtectedRoute from "./ProtectedRoute";
 import Loader from "@/components/loader/Loader";
@@ -27,7 +27,9 @@ export default function AppRoutes() {
         </Route>
         <Route path="/login" element={<LoginPage />} />
 
-        {/* <Route path="*" element={<Error404 />} /> */}
+        {/* Без этого любой несуществующий путь рендерил пустоту:
+            маршрут не совпадал, и внутри лэйаута не отрисовывалось ничего */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Suspense>
   );
